@@ -3,63 +3,14 @@
 Design and analysis of plant breeding trials, from single trials to
 groups of environments, with storage in ‘Breedbase’.
 
-- **Augmented row-column designs** (Piepho and Williams, 2016):
-  unreplicated entries plus replicated checks in rows, columns and
-  superimposed blocks. Row and column groups can be unequal, blocks can
-  hold any number of check plots, and checks are placed by a D-optimal
-  search (or covering Latin rectangles for regular layouts). Analyses
-  can use random blocks, random entries (BLUPs), or a ‘SpATS’ spatial
-  model.
-- **Augmented p-rep designs** (Williams, Piepho and Whitaker, 2011):
-  multi-location, partially replicated trials in incomplete blocks where
-  pairs of entries share a block at most once. Choose the construction
-  with `method`: a flexible randomized `"search"`, the paper’s partial
-  alpha-array construction (`"alpha"`), or its augmented alpha(2)-array
-  construction (`"alpha2"`).
-  [`augmented_prep_parameters()`](https://solgenomics.github.io/breedtools/reference/augmented_prep_parameters.md)
-  lists the feasible settings, and every design reports its efficiency
-  factor.
-- **Resolvable row-column designs** (Williams, John and Whitaker, 2006):
-  fully replicated trials with rows and columns within replicates,
-  optimized for row-column and spatial (linear variance) efficiency,
-  with latinized options; analyses with RC, LV + RC and AR + RC models
-  by REML.
-- **Analysis**: ANOVA with degrees of freedom that are estimable from
-  the observed plots, plus **adjusted entry means (BLUEs)** with
-  standard errors, the mean SED and the 5% LSD. p-rep analyses fit
-  replicates within locations and can add a fixed or random (REML)
-  genotype-by-location interaction. A two-stage analysis
-  ([`analyze_augmented_prep_two_stage()`](https://solgenomics.github.io/breedtools/reference/analyze_augmented_prep_two_stage.md))
-  handles heterogeneous error variances across locations and optional
-  spatial adjustment with ‘SpATS’.
-- **Field maps and ‘Breedbase’**: a plot-level field book and upload
-  files, or save the design directly into a Breedbase breeding program
-  and folder through BrAPI with
-  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md),
-  after checking the location and accessions with
-  [`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md).
-  After harvest, save the phenotypic data by plot and trait name with
-  [`save_breedbase_phenotypes()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.md)
-  (sheet from
-  [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md)),
-  and the analysis results: first-stage plot values as a trait of the
-  field plots
-  ([`save_breedbase_first_stage()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_first_stage.md))
-  and second-stage genotype means as a Breedbase analysis
-  ([`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)).
-- **agricolae designs**: generate a design with the CRAN package
-  `agricolae`, convert and record trial information with
-  [`prepare_breedbase_trial()`](https://solgenomics.github.io/breedtools/reference/prepare_breedbase_trial.md),
-  then use the same
-  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md)
-  and
-  [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md)
-  workflow.
-- **Environment stratification**: read ‘Breedbase’ phenotype files, test
-  whether trials can be combined (Hartley’s Fmax test of error
-  variances), group environments that rank genotypes alike by
-  Lin’s (1982) GxE test, and draw the groups on a map. See [Group
-  environments](#group-environments-environment-stratification).
+- **Design** augmented row-column, augmented p-rep and resolvable
+  row-column trials, or bring designs made with ‘agricolae’.
+- **Analyse** each trial (adjusted means, BLUPs, spatial models with
+  ‘SpATS’) and several trials together (two-stage or single-stage).
+- **Group environments** that rank genotypes alike (Lin, 1982) and draw
+  them on a map.
+- **Save** trials, phenotypes and analysis results to ‘Breedbase’
+  through BrAPI.
 
 ## Installation
 
@@ -67,52 +18,53 @@ groups of environments, with storage in ‘Breedbase’.
 
 # install.packages("remotes")
 remotes::install_github("solgenomics/breedtools")
+library(breedtools)
 ```
 
-## Documentation
+## Connect to Breedbase (optional)
 
-- **Website**: <https://solgenomics.github.io/breedtools/>. The
-  [function
-  reference](https://solgenomics.github.io/breedtools/reference/) groups
-  every function by task and shows its arguments with examples you can
-  run.
-- **Tutorial**:
-  [`vignette("breedtools")`](https://solgenomics.github.io/breedtools/articles/breedtools.md)
-  walks through every design and analysis with simulated data.
-- **In R**:
-  [`help(package = "breedtools")`](https://solgenomics.github.io/breedtools/reference)
-  lists every help page.
-  [`?augmented_row_column_design`](https://solgenomics.github.io/breedtools/reference/augmented_row_column_design.md)
-  opens one page, and `example(augmented_row_column_design)` runs its
-  examples.
-- **All functions** are listed by task [at the end of this
-  page](#all-functions).
-
-## Find layout options from your entry count
+Designs, analyses and environment groups all work offline. A connection
+is only needed to check names against your database, save trials,
+phenotypes and results, or read phenotypes from it. You need an account
+on the site; use a test site such as
+`https://cassava-test.sgn.cornell.edu` to try things out before saving
+to production.
 
 ``` r
 
-library(breedtools)
+con <- breedbase_login("https://cassavabase.org", username = "your_username")
+con                          # site, user and time of login
+breedbase_programs(con)      # breeding programs your account can see
+breedbase_folders(con, program = "IITA")
+breedbase_locations(con)
+```
+
+Never write your password in a script: leave it out and type it in the
+pop-up, or set `BREEDBASE_PASSWORD` in your `.Renviron` file. Test sites
+also have a web password (`site_username`, `BREEDBASE_SITE_PASSWORD`).
+[`?breedbase_connection`](https://solgenomics.github.io/breedtools/reference/breedbase_connection.md)
+explains every option.
+
+## Designs from breedtools
+
+| Design | When to use it | Function |
+|----|----|----|
+| Augmented row-column (Piepho and Williams, 2016) | One plot per entry, replicated checks, one location | [`augmented_row_column_design()`](https://solgenomics.github.io/breedtools/reference/augmented_row_column_design.md) |
+| Augmented p-rep (Williams, Piepho and Whitaker, 2011) | Several locations, part of the entries repeated, no checks | [`augmented_prep_design()`](https://solgenomics.github.io/breedtools/reference/augmented_prep_design.md) |
+| Resolvable row-column (Williams, John and Whitaker, 2006) | Every entry in every replicate | [`resolvable_row_column_design()`](https://solgenomics.github.io/breedtools/reference/resolvable_row_column_design.md) |
+
+Not sure which layout fits? Start from the number of entries:
+
+``` r
+
 design_options(n_entries = 100)  # field dimensions and checks not yet known
 design_options(108, design = "augmented_row_column", n_checks = 4, rows_in_field = 12, cols_in_field = 12)
 design_options(42, design = "resolvable", n_reps = 3, cols_in_field = 7)
 ```
 
-Options report field size, checks, replication, plot counts, unused
-positions and nominal error degrees of freedom. Augmented row-column
-options expose `rows_in_field`, `cols_in_field`, `rows_per_block`,
-`cols_per_block`, `checks_per_block`, `method` and `n_candidates` for an
-explicit generator call. See
-[`?design_options`](https://solgenomics.github.io/breedtools/reference/design_options.md)
-for selecting and generating one. These are parameter options to check
-with the generator, its summary and
-[`check_design()`](https://solgenomics.github.io/breedtools/reference/check_design.md).
-
-## Example
+Then generate the design, look at the field map, check it and save it:
 
 ``` r
-
-library(breedtools)
 
 rc <- augmented_row_column_design(
   treatments = sprintf("LINE_%03d", 1:108),
@@ -123,23 +75,32 @@ rc <- augmented_row_column_design(
 )
 plot_augmented_row_column_design(rc)
 
-field <- rc$design
-field$yield <- rnorm(nrow(field), 60, 3)   # your phenotypes here
-fit <- analyze_augmented_row_column_design(field, response = "yield")
-fit                      # ANOVA and top adjusted means
-fit$adjusted_means       # all entries ranked by adjusted mean
+# Save it to Breedbase: check the names, preview, then save
+breedbase_check(con, accessions = rc, location = "Ibadan", program = "IITA",
+                folder = "AYT 2026", trial_name = "AYT_2026_Ibadan")
+save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+               trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
+               description = "Advanced yield trial", dry_run = TRUE)
+save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+               trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
+               description = "Advanced yield trial")
+sheet <- phenotype_template(rc, trial_name = "AYT_2026_Ibadan", location = "Ibadan",
+                            traits = "fresh root yield")   # field sheet with the plot names
 ```
 
-To see the full workflow, run
-[`vignette("breedtools")`](https://solgenomics.github.io/breedtools/articles/breedtools.md),
-or open the RStudio script:
+Augmented row-column designs can have unequal row and column groups, any
+number of check plots per block and D-optimal check placement. P-rep
+designs are built by a randomized search or from the paper’s alpha and
+alpha(2) arrays (`method`), and report their efficiency factor.
+Resolvable designs are optimized for row-column and spatial efficiency,
+with latinized options.
+[`add_plot_coordinates()`](https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.md)
+adds GPS coordinates to the plots before saving.
 
-``` r
+## Designs from agricolae
 
-file.edit(system.file("examples", "breedtools_workflow.R", package = "breedtools"))
-```
-
-## Save an agricolae design as a new Breedbase trial
+Designs generated with the CRAN package ‘agricolae’ keep their
+randomization and use the same saving workflow:
 
 ``` r
 
@@ -152,42 +113,67 @@ trial <- prepare_breedbase_trial(
   checks = "CHECK_A", prompt = FALSE
 )
 
-# Inspect the trial and plot payload without a connection.
-payload <- save_breedbase(trial, dry_run = TRUE)
-
-# Check against your database, then save as a new trial.
-con <- breedbase_login("https://your-breedbase.org", "your_username")
-save_breedbase(trial, con, dry_run = TRUE)
-save_breedbase(trial, con)
+payload <- save_breedbase(trial, dry_run = TRUE)   # preview, no connection needed
+save_breedbase(trial, con, dry_run = TRUE)         # check against your database
+save_breedbase(trial, con)                         # save as a new trial
 ```
 
 [`prepare_breedbase_trial()`](https://solgenomics.github.io/breedtools/reference/prepare_breedbase_trial.md)
-records the required trial information once and converts the field book.
-In an interactive RStudio session, it can ask for missing name, year,
-location, program and description. Use `phenotype_template(trial)` to
-make a field sheet with the recorded trial’s plot names. Preparation is
-offline; saving uses your existing connection.
-
-The converter preserves the randomization. It recognizes CRD, RCBD,
-alpha, lattice, augmented block, split-plot and strip-plot types. For a
-field book alone, including
+records the trial information once and converts the field book. In an
+interactive RStudio session it can ask for the missing name, year,
+location, program and description. It recognizes CRD, RCBD, alpha,
+lattice, augmented block, split-plot and strip-plot designs. For a field
+book alone, including
 [`agricolae::zigzag()`](https://rdrr.io/pkg/agricolae/man/zigzag.html)
-output, supply `design_type`. For multiple treatment factors, select the
-accession column explicitly, e.g. `accession = "genotype"`. Other
-factors and the main-plot/subplot hierarchy remain in `trial$book`; the
-save function uploads individual plots. See
+output, supply `design_type`. For several treatment factors, name the
+accession column, e.g. `accession = "genotype"`; the other factors stay
+in `trial$book`. See
 [`?as_breedbase_design`](https://solgenomics.github.io/breedtools/reference/as_breedbase_design.md)
-for column mapping and other design types.
+for the column mapping.
 
-The complete tour in `scripts/validate_designs.R` includes a second
-analyzed trait added to existing analysis projects (A11), an independent
-single-stage analysis (run A1-A6, then A12), and the full agricolae
-workflow (Part I). Part H reads existing Breedbase trials and lets you
-choose `"single"`, `"two_stage"` or `"both"` through
-`breedbase_analysis_route`; multiple traits are stored in the same
-analysis projects.
+## Analysis
 
-## Group environments (environment stratification)
+Each design has its own analysis: ANOVA with estimable degrees of
+freedom, adjusted entry means (BLUEs) with standard errors, the mean SED
+and the 5% LSD, or random entries (BLUPs) and ‘SpATS’ spatial models.
+
+``` r
+
+field <- rc$design
+field$yield <- rnorm(nrow(field), 60, 3)   # your phenotypes here
+plot_trait(field, "yield")                 # distribution and field map
+find_outliers(field, "yield")
+fit <- analyze_augmented_row_column_design(field, response = "yield")
+fit                                        # ANOVA and top adjusted means
+fit$adjusted_means                         # all entries ranked
+```
+
+For trials of any design across locations,
+[`analyze_two_stage()`](https://solgenomics.github.io/breedtools/reference/analyze_two_stage.md)
+analyses each location first (spatial, blocks or design model) and then
+combines them, weighting by precision and with a random
+genotype-by-location interaction;
+[`analyze_single_stage()`](https://solgenomics.github.io/breedtools/reference/analyze_single_stage.md)
+fits everything in one model. P-rep designs have their own
+[`analyze_augmented_prep_two_stage()`](https://solgenomics.github.io/breedtools/reference/analyze_augmented_prep_two_stage.md).
+
+The results go back to Breedbase, with the phenotypes:
+
+``` r
+
+save_breedbase_phenotypes(sheet, con)                  # the field sheet, filled in
+stage1 <- first_stage_values(fit, rc, trial_name = "AYT_2026_Ibadan",
+                             location = "Ibadan", trait = "fresh root yield")
+save_breedbase_first_stage(stage1, con)                # adjusted plot values
+stage2 <- second_stage_values(fit, trait = "fresh root yield")
+save_breedbase_analysis(stage2, con, analysis_name = "AYT_2026_Ibadan_means",
+                        program = "IITA", description = "Adjusted means, row-column model")
+```
+
+Every `save_*()` function accepts `dry_run = TRUE` to check everything
+without writing.
+
+## Environment stratification (grouping environments)
 
 Before combining trials from several locations, check two things: are
 the error variances similar enough to analyse the trials together, and
@@ -212,7 +198,7 @@ st$group_summary
 #> 1  Group_1 Geneva, Ithaca     2 2.259034 1.8924496 0.09774358
 #> 2  Group_2 Ibadan, Ubiaja     2 4.422801 0.7875387 0.64998303
 
-# 3. Draw the groups on an interactive map
+# 3. Draw the groups on an interactive map (open maps, no API key)
 map_environment_groups(st, read_locations(loc_file, phenotype_data = st))
 ```
 
@@ -229,9 +215,30 @@ the same way: download the phenotypes of the trials from ‘Breedbase’
 (`.csv` or `.xlsx`) and pass its path; columns are detected
 automatically.
 `run_environment_stratification(..., export_json = TRUE, output_dir = ...)`
-also saves the results as JSON. The tutorial,
-[`vignette("breedtools")`](https://solgenomics.github.io/breedtools/articles/breedtools.md),
-has the full example (chapter 4).
+also saves the results as JSON.
+
+## Documentation
+
+- **Website**: <https://solgenomics.github.io/breedtools/>. The
+  [function
+  reference](https://solgenomics.github.io/breedtools/reference/) groups
+  every function by task and shows its arguments with examples you can
+  run.
+- **Tutorial**:
+  [`vignette("breedtools")`](https://solgenomics.github.io/breedtools/articles/breedtools.md)
+  walks through every design and analysis with simulated data, and
+  connecting to Breedbase.
+- **RStudio script**: the whole workflow in one file,
+  `file.edit(system.file("examples", "breedtools_workflow.R", package = "breedtools"))`.
+  The complete tour in `scripts/validate_designs.R` (in the GitHub
+  repository) also reads existing Breedbase trials and adds traits to
+  saved analyses.
+- **In R**:
+  [`help(package = "breedtools")`](https://solgenomics.github.io/breedtools/reference)
+  lists every help page.
+  [`?augmented_row_column_design`](https://solgenomics.github.io/breedtools/reference/augmented_row_column_design.md)
+  opens one page, and `example(augmented_row_column_design)` runs its
+  examples.
 
 ## All functions
 
