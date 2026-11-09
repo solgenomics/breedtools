@@ -40,7 +40,10 @@ resolvable_row_column_design(
   plot_type = c("serpentine", "cartesian"),
   seed = NULL,
   output_file = NULL,
-  start_design = NULL
+  start_design = NULL,
+  trial_name = NULL,
+  location = NULL,
+  plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 )
 ```
 
@@ -115,6 +118,28 @@ resolvable_row_column_design(
   `col_in_rep` and `all_entries` columns and complete replicates. The
   search then improves this design; use `n_iter = 1` and
   `spatial = FALSE` to keep it essentially as it is and only lay it out.
+
+- trial_name:
+
+  Optional Breedbase trial name. When given, a `plot_name` column with
+  the plot names used by
+  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md)
+  is added to the design (see
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md)),
+  so the names can be checked with
+  [`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md)
+  and changed before saving.
+
+- location:
+
+  Breedbase location of the trial, for the `{location}` field of the
+  plot names. Used only with `trial_name`.
+
+- plot_name_pattern:
+
+  Pattern for the plot names, as in
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md).
+  Used only with `trial_name`.
 
 ## Value
 

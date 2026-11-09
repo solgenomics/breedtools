@@ -131,15 +131,21 @@ names before designing.
 
 ## Save designs to Breedbase
 
-Convert agricolae designs, preview the payload, and save trials with
-their plots.
+Convert agricolae designs, add plot names and GPS coordinates, preview
+the payload, and save trials with their plots.
 
 - [`prepare_breedbase_trial()`](https://solgenomics.github.io/breedtools/reference/prepare_breedbase_trial.md)
   : Prepare an agricolae design and trial information for Breedbase
 - [`as_breedbase_design()`](https://solgenomics.github.io/breedtools/reference/as_breedbase_design.md)
   : Convert an agricolae field book for saving to Breedbase
+- [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md)
+  : Add Breedbase plot names to a design
+- [`add_plot_coordinates()`](https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.md)
+  : Add GPS coordinates to the plots of a design
 - [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md)
   : Save a design to Breedbase
+- [`save_breedbase_coordinates()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_coordinates.md)
+  : Save plot GPS coordinates of a trial already in Breedbase
 - [`breedbase_trial_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_trial_plots.md)
   : Read the plots of a trial saved in Breedbase
 - [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md)
@@ -158,6 +164,10 @@ analyses.
   : Save first-stage results to Breedbase as a trait of the field plots
 - [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)
   : Save analysis results to Breedbase as an analysis
+- [`analysis_plot_names()`](https://solgenomics.github.io/breedtools/reference/analysis_plot_names.md)
+  : Plot and accession names an analysis will have, before saving
+- [`breedbase_analysis_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_analysis_plots.md)
+  : Plots of an analysis saved in Breedbase
 - [`add_breedbase_analysis_values()`](https://solgenomics.github.io/breedtools/reference/add_breedbase_analysis_values.md)
   : Add results to an analysis that is already in Breedbase
 

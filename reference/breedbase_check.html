@@ -61,7 +61,8 @@ problems are reported together, with close matches as suggestions
 <span>  location <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  program <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  folder <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  trial_name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  trial_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_names <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -74,9 +75,10 @@ problems are reported together, with close matches as suggestions
 
 
 <dt id="arg-accessions">accessions<a class="anchor" aria-label="anchor" href="#arg-accessions"></a></dt>
-<dd><p>Entry and check names: a character vector, or a design
-from <code><a href="augmented_row_column_design.html">augmented_row_column_design()</a></code>, <code><a href="augmented_prep_design.html">augmented_prep_design()</a></code> or
-<code><a href="resolvable_row_column_design.html">resolvable_row_column_design()</a></code>.</p></dd>
+<dd><p>Entry and check names: a character vector, a design
+from <code><a href="augmented_row_column_design.html">augmented_row_column_design()</a></code>, <code><a href="augmented_prep_design.html">augmented_prep_design()</a></code>,
+<code><a href="resolvable_row_column_design.html">resolvable_row_column_design()</a></code> or <code><a href="as_breedbase_design.html">as_breedbase_design()</a></code>, or a list
+of such designs (e.g. one per location).</p></dd>
 
 
 <dt id="arg-location">location<a class="anchor" aria-label="anchor" href="#arg-location"></a></dt>
@@ -93,6 +95,19 @@ program).</p></dd>
 <dd><p>Optional trial name(s), e.g. one per location. A name
 already used by a trial (with plots) is reported as
 <code>"TAKEN"</code>: change it before saving.</p></dd>
+
+
+<dt id="arg-plot-names">plot_names<a class="anchor" aria-label="anchor" href="#arg-plot-names"></a></dt>
+<dd><p>Optional plot names to check: a character vector, a
+design, or a list of designs. By default the plot names stored in the
+design(s) given in <code>accessions</code> are checked (see <code><a href="add_plot_names.html">add_plot_names()</a></code>).
+A design without stored plot names gets the default names of
+<code><a href="save_breedbase.html">save_breedbase()</a></code> for the check when it can be matched to one trial
+name and location (one design and one <code>trial_name</code>, or a list of
+designs and one trial name and location per design). Plot names must be unique in the whole
+database: a name already used is reported as <code>"TAKEN"</code>, a name given to
+two plots as <code>"REPEATED"</code>. To save with other names, change the
+<code>plot_name</code> column of the design or use <code><a href="add_plot_names.html">add_plot_names()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

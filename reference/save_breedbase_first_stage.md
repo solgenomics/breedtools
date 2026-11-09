@@ -109,19 +109,20 @@ d <- rc$design
 set.seed(1)
 d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 fit <- analyze_augmented_row_column_design(d, "yield")
-values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+                            location = "Ibadan")
 obs <- save_breedbase_first_stage(values, dry_run = TRUE)
 #> Dry run without a connection: returning the observations that would be sent.
 head(obs)
 #> # A tibble: 6 × 4
-#>   plot_name               trait                                  value timestamp
-#>   <chr>                   <chr>                                  <chr> <chr>    
-#> 1 AYT_2026_Ibadan_G51_1_1 fresh root yield|Adjusted Means from … 28.7… NA       
-#> 2 AYT_2026_Ibadan_G64_1_1 fresh root yield|Adjusted Means from … 29.9… NA       
-#> 3 AYT_2026_Ibadan_G97_1_1 fresh root yield|Adjusted Means from … 29.8… NA       
-#> 4 AYT_2026_Ibadan_C3_1_1  fresh root yield|Adjusted Means from … 27.3… NA       
-#> 5 AYT_2026_Ibadan_G8_2_1  fresh root yield|Adjusted Means from … 28.2… NA       
-#> 6 AYT_2026_Ibadan_C2_2_2  fresh root yield|Adjusted Means from … 28.0… NA       
+#>   plot_name                      trait                           value timestamp
+#>   <chr>                          <chr>                           <chr> <chr>    
+#> 1 AYT_2026_Ibadan_Ibadan_G51_1_1 fresh root yield|Adjusted Mean… 28.7… NA       
+#> 2 AYT_2026_Ibadan_Ibadan_G64_1_1 fresh root yield|Adjusted Mean… 29.9… NA       
+#> 3 AYT_2026_Ibadan_Ibadan_G97_1_1 fresh root yield|Adjusted Mean… 29.8… NA       
+#> 4 AYT_2026_Ibadan_Ibadan_C3_1_1  fresh root yield|Adjusted Mean… 27.3… NA       
+#> 5 AYT_2026_Ibadan_Ibadan_G8_2_1  fresh root yield|Adjusted Mean… 28.2… NA       
+#> 6 AYT_2026_Ibadan_Ibadan_C2_2_2  fresh root yield|Adjusted Mean… 28.0… NA       
 
 if (FALSE) { # \dontrun{
 con <- breedbase_login("https://cassavabase.org", "jdoe")

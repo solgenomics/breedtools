@@ -260,40 +260,40 @@ so this is estimable whenever the location has enough p-rep plots.</p>
 <span class="r-in"><span><span class="va">analysis</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Augmented p-rep design analysis</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                            Source Df     Sum Sq   Mean Sq   F value    Pr(&gt;F)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                       Locations  1   34.49739  34.49739 0.1295598 0.7295037</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Blocks, nested within locations  4  244.45672  61.11418 0.2295230 0.9132739</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                       Genotypes  7  260.56651  37.22379 0.1397992 0.9906223</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4                           Error  7 1863.86256 266.26608        NA        NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 Corrected total 19 2403.38318        NA        NA        NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                            Source Df     Sum Sq   Mean Sq  F value     Pr(&gt;F)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                       Locations  1   77.50845  77.50845 2.059080 0.19443287</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Blocks, nested within locations  4  378.47777  94.61944 2.513649 0.13570851</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                       Genotypes  7 1632.20594 233.17228 6.194427 0.01402908</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                           Error  7  263.49586  37.64227       NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 Corrected total 19 2351.68801        NA       NA         NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Significance</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            *</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Top adjusted means (8 genotypes; see $adjusted_means):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  rank genotype n_observations adjusted_mean std_error</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1       G3              3        103.28     10.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2       G1              2         99.70     12.80</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3       G4              2         99.07     13.69</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     4       G6              3         98.89     10.44</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5       G5              2         95.99     13.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6       G7              3         95.80     10.40</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7       G8              3         92.56     10.74</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8       G2              2         88.42     14.10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Mean SED = 17.34; LSD (5%) = 41</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     1       G1              2        120.18     4.814</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     2       G5              2        108.08     4.964</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     3       G2              2        105.41     5.303</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     4       G7              3         98.24     3.911</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     5       G8              3         95.13     4.037</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     6       G4              2         93.29     5.147</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     7       G6              3         93.24     3.924</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     8       G3              3         85.17     3.888</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Mean SED = 6.52; LSD (5%) = 15.42</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">analysis</span><span class="op">$</span><span class="va">adjusted_means</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 11</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    rank genotype entry_type    repeated_at is_control n_observations n_locations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1 G3       p_rep_entry_… Loc2                 0              3           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>     2 G1       single_entry… not_repeat…          0              2           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>     3 G4       single_entry… not_repeat…          0              2           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>     4 G6       p_rep_entry_… Loc2                 0              3           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>     5 G5       single_entry… not_repeat…          0              2           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>     6 G7       p_rep_entry_… Loc1                 0              3           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1 G1       single_entry… not_repeat…          0              2           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>     2 G5       single_entry… not_repeat…          0              2           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>     3 G2       single_entry… not_repeat…          0              2           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>     4 G7       p_rep_entry_… Loc1                 0              3           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>     5 G8       p_rep_entry_… Loc1                 0              3           2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>     6 G4       single_entry… not_repeat…          0              2           2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: n_extra_repeats &lt;int&gt;, raw_mean &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   adjusted_mean &lt;dbl&gt;, std_error &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>

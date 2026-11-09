@@ -16,9 +16,10 @@ first_stage_values(
   design = NULL,
   trial_name = NULL,
   trait = NULL,
-  plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
+  plot_name_pattern = NULL,
   plot_names = NULL,
-  breedbase_plots = NULL
+  breedbase_plots = NULL,
+  location = NULL
 )
 ```
 
@@ -50,10 +51,12 @@ first_stage_values(
 
   Trait name when `fits` is a single analysis.
 
-- plot_name_pattern, plot_names:
+- plot_name_pattern, plot_names, location:
 
   The plot naming used in
-  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md).
+  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md);
+  `location` is the Breedbase location of the trial, needed for the
+  `{location}` field when the design has no stored plot names.
 
 - breedbase_plots:
 
@@ -78,7 +81,8 @@ d <- rc$design
 set.seed(1)
 d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 fit <- analyze_augmented_row_column_design(d, "yield")
-values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+                            location = "Ibadan")
 head(values)
 #> # A tibble: 6 × 10
 #>   plot_name    trial_name accession plot_number block   rep   row   col is_check

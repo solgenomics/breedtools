@@ -421,7 +421,19 @@
 </tr>
 <tr>
 <td><code><a href="reference/breedbase_check.html">breedbase_check()</a></code></td>
-<td>Checks the program, folder, location, accessions and trial name before you save</td>
+<td>Checks the program, folder, location, accessions, trial and plot names before you save, and says whether everything is READY</td>
+</tr>
+<tr>
+<td><code><a href="reference/add_plot_names.html">add_plot_names()</a></code></td>
+<td>Adds the Breedbase plot names to a design, to see, check or edit them before saving</td>
+</tr>
+<tr>
+<td><code><a href="reference/add_plot_coordinates.html">add_plot_coordinates()</a></code></td>
+<td>Adds plot GPS coordinates, from the field corner and plot size, or one point per plot</td>
+</tr>
+<tr>
+<td><code><a href="reference/save_breedbase_coordinates.html">save_breedbase_coordinates()</a></code></td>
+<td>Saves plot GPS coordinates to a trial already in Breedbase</td>
 </tr>
 <tr>
 <td><code><a href="reference/prepare_breedbase_trial.html">prepare_breedbase_trial()</a></code></td>
@@ -433,7 +445,7 @@
 </tr>
 <tr>
 <td><code><a href="reference/save_breedbase.html">save_breedbase()</a></code></td>
-<td>Saves a design as a new trial with its plots (<code>dry_run = TRUE</code> previews it)</td>
+<td>Saves a design as a new trial with its plots and their GPS coordinates (<code>dry_run = TRUE</code> previews it)</td>
 </tr>
 <tr>
 <td><code><a href="reference/breedbase_trial_plots.html">breedbase_trial_plots()</a></code></td>
@@ -448,11 +460,14 @@
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://your-breedbase.org"</span>, <span class="st">"your_username"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/breedbase_lists.html">breedbase_programs</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/breedbase_check.html">breedbase_check</a></span><span class="op">(</span><span class="va">con</span>, accessions <span class="op">=</span> <span class="va">rc</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>, program <span class="op">=</span> <span class="st">"Cassava"</span><span class="op">)</span></span>
+<span><span class="va">rc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_plot_names.html">add_plot_names</a></span><span class="op">(</span><span class="va">rc</span>, <span class="st">"AYT_2026"</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span><span class="op">)</span>       <span class="co"># see rc$design$plot_name</span></span>
+<span><span class="va">rc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_plot_coordinates.html">add_plot_coordinates</a></span><span class="op">(</span><span class="va">rc</span>, origin <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7.4931</span>, <span class="fl">3.9035</span><span class="op">)</span>, plot_width <span class="op">=</span> <span class="fl">3</span>, plot_length <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/breedbase_check.html">breedbase_check</a></span><span class="op">(</span><span class="va">con</span>, accessions <span class="op">=</span> <span class="va">rc</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>, program <span class="op">=</span> <span class="st">"Cassava"</span>,</span>
+<span>                trial_name <span class="op">=</span> <span class="st">"AYT_2026"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/save_breedbase.html">save_breedbase</a></span><span class="op">(</span><span class="va">rc</span>, <span class="va">con</span>, program <span class="op">=</span> <span class="st">"Cassava"</span>, folder <span class="op">=</span> <span class="st">"AYT 2026"</span>,</span>
-<span>               trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>, year <span class="op">=</span> <span class="fl">2026</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>,</span>
+<span>               trial_name <span class="op">=</span> <span class="st">"AYT_2026"</span>, year <span class="op">=</span> <span class="fl">2026</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>,</span>
 <span>               description <span class="op">=</span> <span class="st">"Advanced yield trial"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/phenotype_template.html">phenotype_template</a></span><span class="op">(</span><span class="va">rc</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>, traits <span class="op">=</span> <span class="st">"fresh root yield"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/phenotype_template.html">phenotype_template</a></span><span class="op">(</span><span class="va">rc</span>, traits <span class="op">=</span> <span class="st">"fresh root yield"</span><span class="op">)</span>      <span class="co"># uses the stored plot names</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="id_8-breedbase-phenotypes-and-analysis-results">8. Breedbase: phenotypes and analysis results<a class="anchor" aria-label="anchor" href="#id_8-breedbase-phenotypes-and-analysis-results"></a>
@@ -481,7 +496,15 @@
 </tr>
 <tr>
 <td><code><a href="reference/save_breedbase_analysis.html">save_breedbase_analysis()</a></code></td>
-<td>Saves second-stage genotype values as a Breedbase analysis</td>
+<td>Saves results as a Breedbase analysis, of plots (first stage) or accessions (second stage)</td>
+</tr>
+<tr>
+<td><code><a href="reference/analysis_plot_names.html">analysis_plot_names()</a></code></td>
+<td>Shows the plot and accession names an analysis will have, before saving</td>
+</tr>
+<tr>
+<td><code><a href="reference/breedbase_analysis_plots.html">breedbase_analysis_plots()</a></code></td>
+<td>Reads the plots, accessions and values of an analysis already in Breedbase</td>
 </tr>
 <tr>
 <td><code><a href="reference/add_breedbase_analysis_values.html">add_breedbase_analysis_values()</a></code></td>

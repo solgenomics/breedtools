@@ -195,40 +195,40 @@ analysis <- analyze_augmented_prep_design(design_data, response = "yield")
 analysis
 #> Augmented p-rep design analysis
 #> 
-#>                            Source Df     Sum Sq   Mean Sq   F value    Pr(>F)
-#> 1                       Locations  1   34.49739  34.49739 0.1295598 0.7295037
-#> 2 Blocks, nested within locations  4  244.45672  61.11418 0.2295230 0.9132739
-#> 3                       Genotypes  7  260.56651  37.22379 0.1397992 0.9906223
-#> 4                           Error  7 1863.86256 266.26608        NA        NA
-#> 5                 Corrected total 19 2403.38318        NA        NA        NA
+#>                            Source Df     Sum Sq   Mean Sq  F value     Pr(>F)
+#> 1                       Locations  1   77.50845  77.50845 2.059080 0.19443287
+#> 2 Blocks, nested within locations  4  378.47777  94.61944 2.513649 0.13570851
+#> 3                       Genotypes  7 1632.20594 233.17228 6.194427 0.01402908
+#> 4                           Error  7  263.49586  37.64227       NA         NA
+#> 5                 Corrected total 19 2351.68801        NA       NA         NA
 #>   Significance
 #> 1             
 #> 2             
-#> 3             
+#> 3            *
 #> 4             
 #> 5             
 #> 
 #> Top adjusted means (8 genotypes; see $adjusted_means):
 #>  rank genotype n_observations adjusted_mean std_error
-#>     1       G3              3        103.28     10.34
-#>     2       G1              2         99.70     12.80
-#>     3       G4              2         99.07     13.69
-#>     4       G6              3         98.89     10.44
-#>     5       G5              2         95.99     13.20
-#>     6       G7              3         95.80     10.40
-#>     7       G8              3         92.56     10.74
-#>     8       G2              2         88.42     14.10
-#> Mean SED = 17.34; LSD (5%) = 41
+#>     1       G1              2        120.18     4.814
+#>     2       G5              2        108.08     4.964
+#>     3       G2              2        105.41     5.303
+#>     4       G7              3         98.24     3.911
+#>     5       G8              3         95.13     4.037
+#>     6       G4              2         93.29     5.147
+#>     7       G6              3         93.24     3.924
+#>     8       G3              3         85.17     3.888
+#> Mean SED = 6.52; LSD (5%) = 15.42
 head(analysis$adjusted_means)
 #> # A tibble: 6 × 11
 #>    rank genotype entry_type    repeated_at is_control n_observations n_locations
 #>   <int> <chr>    <chr>         <chr>            <int>          <int>       <int>
-#> 1     1 G3       p_rep_entry_… Loc2                 0              3           2
-#> 2     2 G1       single_entry… not_repeat…          0              2           2
-#> 3     3 G4       single_entry… not_repeat…          0              2           2
-#> 4     4 G6       p_rep_entry_… Loc2                 0              3           2
-#> 5     5 G5       single_entry… not_repeat…          0              2           2
-#> 6     6 G7       p_rep_entry_… Loc1                 0              3           2
+#> 1     1 G1       single_entry… not_repeat…          0              2           2
+#> 2     2 G5       single_entry… not_repeat…          0              2           2
+#> 3     3 G2       single_entry… not_repeat…          0              2           2
+#> 4     4 G7       p_rep_entry_… Loc1                 0              3           2
+#> 5     5 G8       p_rep_entry_… Loc1                 0              3           2
+#> 6     6 G4       single_entry… not_repeat…          0              2           2
 #> # ℹ 4 more variables: n_extra_repeats <int>, raw_mean <dbl>,
 #> #   adjusted_mean <dbl>, std_error <dbl>
 ```

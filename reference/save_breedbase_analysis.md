@@ -192,10 +192,10 @@ head(sent$file)
 #>   stock_names fresh root yield
 #> 1         E50 30.0238650149583
 #> 2         E45 29.8904456685267
-#> 3         E39 28.5504753824033
+#> 3         E39 28.5504753824034
 #> 4         E11 27.8069635554438
 #> 5          E2 27.5851896298825
-#> 6         E28 27.4592783525858
+#> 6         E28 27.4592783525859
 
 if (FALSE) { # \dontrun{
 con <- breedbase_login("https://cassavabase.org", "jdoe")

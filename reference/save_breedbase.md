@@ -26,7 +26,7 @@ save_breedbase(
   trial_type = "phenotyping_trial",
   design_type = NULL,
   plot_names = NULL,
-  plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
+  plot_name_pattern = NULL,
   create_folder = FALSE,
   dry_run = FALSE,
   confirm = interactive()
@@ -113,12 +113,15 @@ save_breedbase(
 - plot_name_pattern:
 
   Pattern for automatic plot names, used when `plot_names` is `NULL`.
-  The default `"{trial}_{accession}_{block}_{rep}"` gives names like
-  `"AYT_2026_LINE_007_3_1"`. Available fields: `{trial}` (the Breedbase
-  trial name), `{accession}`, `{block}`, `{rep}`, `{plot}` (plot
-  number), `{row}` and `{col}`. If a pattern gives the same name to two
-  plots (the same accession twice in one block and rep), the plot number
-  is added to those names.
+  With `NULL` (the default) the `plot_name` column of the design is used
+  when it has one, and otherwise the pattern
+  `"{trial}_{location}_{accession}_{block}_{rep}"`, which gives names
+  like `"AYT_2026_Ibadan_LINE_007_3_1"`. Available fields: `{trial}`
+  (the Breedbase trial name), `{location}` (the Breedbase location, with
+  spaces and special characters replaced by `"_"`), `{accession}`,
+  `{block}`, `{rep}`, `{plot}` (plot number), `{row}` and `{col}`. If a
+  pattern gives the same name to two plots (the same accession twice in
+  one block and rep), the plot number is added to those names.
 
 - create_folder:
 
@@ -135,9 +138,10 @@ save_breedbase(
 ## Value
 
 Invisibly, a tibble with one row per Breedbase trial: location, trial
-name, trial id, number of plots sent and found after saving, and the
-address of the trial page. With `dry_run = TRUE` and no connection, a
-list with the trial and plot data that would be sent.
+name, trial id, number of plots sent and found after saving, number of
+plots with GPS coordinates sent and found, and the address of the trial
+page. With `dry_run = TRUE` and no connection, a list with the trial and
+plot data that would be sent.
 
 ## Details
 
@@ -149,13 +153,20 @@ asked to confirm. After saving, the plots are read back from Breedbase
 to verify the upload.
 
 Each plot is saved with its name, plot number, row and column, rep,
-block and whether it is a check. Plot names are made automatically from
-the trial name, accession, block and rep (see `plot_name_pattern`), or
-you can give your own with `plot_names`. Plot names must be unique in
-the whole database, which is checked before saving. A multi-location
-p-rep design becomes one Breedbase trial per location, named
-`"<trial_name>_<location>"`. Filler plots of resolvable row-column
-designs are not saved.
+block and whether it is a check, and its GPS coordinates when the design
+has them (see
+[`add_plot_coordinates()`](https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.md);
+they are sent just after the plots and read back to check). Plot names
+stored in the design (a `plot_name` column, made by the design functions
+when given a `trial_name` or by
+[`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md))
+are used as they are, so they can be reviewed and changed before saving.
+Otherwise they are made automatically from the trial name, accession,
+block and rep (see `plot_name_pattern`), or you can give your own with
+`plot_names`. Plot names must be unique in the whole database, which is
+checked before saving. A multi-location p-rep design becomes one
+Breedbase trial per location, named `"<trial_name>_<location>"`. Filler
+plots of resolvable row-column designs are not saved.
 
 Run first with `dry_run = TRUE`: all the checks are made, but nothing is
 written. Without a connection, `dry_run = TRUE` returns the data that
@@ -210,7 +221,7 @@ str(payload$studies[[1]], max.level = 1)
 #>  $ additionalInfo    :List of 1
 payload$plots[[1]][[1]]
 #> $observationUnitName
-#> [1] "AYT_2026_Ithaca_G51_1_1"
+#> [1] "AYT_2026_Ithaca_Ithaca_G51_1_1"
 #> 
 #> $germplasmName
 #> [1] "G51"

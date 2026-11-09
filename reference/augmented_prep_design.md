@@ -29,7 +29,9 @@ augmented_prep_design(
   output_file = NULL,
   method = c("search", "alpha", "alpha2"),
   n_prep_per_block = NULL,
-  n_efficiency_candidates = 5
+  n_efficiency_candidates = 5,
+  trial_name = NULL,
+  plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 )
 ```
 
@@ -141,6 +143,24 @@ augmented_prep_design(
   block) to compare on the average efficiency factor; the one with the
   highest efficiency is returned. Use `1` to return the first optimal
   candidate. Efficiency is compared for up to 2000 entries.
+
+- trial_name:
+
+  Optional Breedbase trial name. When given, a `plot_name` column with
+  the plot names used by
+  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md)
+  is added to the design (see
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md)),
+  so the names can be checked with
+  [`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md)
+  and changed before saving. For a multi-location design the location is
+  added, one trial per location.
+
+- plot_name_pattern:
+
+  Pattern for the plot names, as in
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md).
+  Used only with `trial_name`; `{location}` is the design location.
 
 ## Value
 

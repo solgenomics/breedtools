@@ -304,10 +304,13 @@ check_reset(); check_design(rc); check_summary()
 |----|----|
 | [`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md) | Logs in to a Breedbase server through BrAPI |
 | [`breedbase_programs()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md) / [`breedbase_folders()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md) / [`breedbase_locations()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md) | Lists breeding programs, trial folders and locations |
-| [`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md) | Checks the program, folder, location, accessions and trial name before you save |
+| [`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md) | Checks the program, folder, location, accessions, trial and plot names before you save, and says whether everything is READY |
+| [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md) | Adds the Breedbase plot names to a design, to see, check or edit them before saving |
+| [`add_plot_coordinates()`](https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.md) | Adds plot GPS coordinates, from the field corner and plot size, or one point per plot |
+| [`save_breedbase_coordinates()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_coordinates.md) | Saves plot GPS coordinates to a trial already in Breedbase |
 | [`prepare_breedbase_trial()`](https://solgenomics.github.io/breedtools/reference/prepare_breedbase_trial.md) | Converts an agricolae design and records the trial information |
 | [`as_breedbase_design()`](https://solgenomics.github.io/breedtools/reference/as_breedbase_design.md) | Converts an agricolae field book only (column mapping) |
-| [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md) | Saves a design as a new trial with its plots (`dry_run = TRUE` previews it) |
+| [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md) | Saves a design as a new trial with its plots and their GPS coordinates (`dry_run = TRUE` previews it) |
 | [`breedbase_trial_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_trial_plots.md) | Reads the plots of a saved trial |
 | [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md) | Makes a phenotyping sheet with the Breedbase plot names |
 
@@ -315,11 +318,14 @@ check_reset(); check_design(rc); check_summary()
 
 con <- breedbase_login("https://your-breedbase.org", "your_username")
 breedbase_programs(con)
-breedbase_check(con, accessions = rc, location = "Ibadan", program = "Cassava")
+rc <- add_plot_names(rc, "AYT_2026", location = "Ibadan")       # see rc$design$plot_name
+rc <- add_plot_coordinates(rc, origin = c(7.4931, 3.9035), plot_width = 3, plot_length = 5)
+breedbase_check(con, accessions = rc, location = "Ibadan", program = "Cassava",
+                trial_name = "AYT_2026")
 save_breedbase(rc, con, program = "Cassava", folder = "AYT 2026",
-               trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
+               trial_name = "AYT_2026", year = 2026, location = "Ibadan",
                description = "Advanced yield trial", dry_run = TRUE)
-phenotype_template(rc, trial_name = "AYT_2026_Ibadan", traits = "fresh root yield")
+phenotype_template(rc, traits = "fresh root yield")      # uses the stored plot names
 ```
 
 ### 8. Breedbase: phenotypes and analysis results
@@ -329,7 +335,9 @@ phenotype_template(rc, trial_name = "AYT_2026_Ibadan", traits = "fresh root yiel
 | [`breedbase_phenotypes()`](https://solgenomics.github.io/breedtools/reference/breedbase_phenotypes.md) | Reads phenotypes of trials by trial and trait name |
 | [`save_breedbase_phenotypes()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.md) | Saves phenotypes by plot and trait name |
 | [`save_breedbase_first_stage()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_first_stage.md) | Saves first-stage plot values as a trait of the field plots |
-| [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md) | Saves second-stage genotype values as a Breedbase analysis |
+| [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md) | Saves results as a Breedbase analysis, of plots (first stage) or accessions (second stage) |
+| [`analysis_plot_names()`](https://solgenomics.github.io/breedtools/reference/analysis_plot_names.md) | Shows the plot and accession names an analysis will have, before saving |
+| [`breedbase_analysis_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_analysis_plots.md) | Reads the plots, accessions and values of an analysis already in Breedbase |
 | [`add_breedbase_analysis_values()`](https://solgenomics.github.io/breedtools/reference/add_breedbase_analysis_values.md) | Adds another trait to an existing analysis |
 | [`breedbase_statistics()`](https://solgenomics.github.io/breedtools/reference/breedbase_statistics.md) | Lists the statistic terms of the SGNSTAT ontology |
 | [`breedbase_adjusted_trait()`](https://solgenomics.github.io/breedtools/reference/breedbase_adjusted_trait.md) | Finds or creates the trait used for adjusted values |

@@ -18,7 +18,8 @@ breedbase_check(
   location = NULL,
   program = NULL,
   folder = NULL,
-  trial_name = NULL
+  trial_name = NULL,
+  plot_names = NULL
 )
 ```
 
@@ -31,11 +32,13 @@ breedbase_check(
 
 - accessions:
 
-  Entry and check names: a character vector, or a design from
+  Entry and check names: a character vector, a design from
   [`augmented_row_column_design()`](https://solgenomics.github.io/breedtools/reference/augmented_row_column_design.md),
-  [`augmented_prep_design()`](https://solgenomics.github.io/breedtools/reference/augmented_prep_design.md)
+  [`augmented_prep_design()`](https://solgenomics.github.io/breedtools/reference/augmented_prep_design.md),
+  [`resolvable_row_column_design()`](https://solgenomics.github.io/breedtools/reference/resolvable_row_column_design.md)
   or
-  [`resolvable_row_column_design()`](https://solgenomics.github.io/breedtools/reference/resolvable_row_column_design.md).
+  [`as_breedbase_design()`](https://solgenomics.github.io/breedtools/reference/as_breedbase_design.md),
+  or a list of such designs (e.g. one per location).
 
 - location:
 
@@ -51,6 +54,22 @@ breedbase_check(
   Optional trial name(s), e.g. one per location. A name already used by
   a trial (with plots) is reported as `"TAKEN"`: change it before
   saving.
+
+- plot_names:
+
+  Optional plot names to check: a character vector, a design, or a list
+  of designs. By default the plot names stored in the design(s) given in
+  `accessions` are checked (see
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md)).
+  A design without stored plot names gets the default names of
+  [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md)
+  for the check when it can be matched to one trial name and location
+  (one design and one `trial_name`, or a list of designs and one trial
+  name and location per design). Plot names must be unique in the whole
+  database: a name already used is reported as `"TAKEN"`, a name given
+  to two plots as `"REPEATED"`. To save with other names, change the
+  `plot_name` column of the design or use
+  [`add_plot_names()`](https://solgenomics.github.io/breedtools/reference/add_plot_names.md).
 
 ## Value
 

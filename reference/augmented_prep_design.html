@@ -76,7 +76,9 @@ once across the whole trial ((0,1)-designs).</p>
 <span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"search"</span>, <span class="st">"alpha"</span>, <span class="st">"alpha2"</span><span class="op">)</span>,</span>
 <span>  n_prep_per_block <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  n_efficiency_candidates <span class="op">=</span> <span class="fl">5</span></span>
+<span>  n_efficiency_candidates <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  trial_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_name_pattern <span class="op">=</span> <span class="st">"{trial}_{location}_{accession}_{block}_{rep}"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -189,6 +191,20 @@ repeated within a block, connected locations, and no pair of entries
 sharing more than one block) to compare on the average efficiency factor;
 the one with the highest efficiency is returned. Use <code>1</code> to return the
 first optimal candidate. Efficiency is compared for up to 2000 entries.</p></dd>
+
+
+<dt id="arg-trial-name">trial_name<a class="anchor" aria-label="anchor" href="#arg-trial-name"></a></dt>
+<dd><p>Optional Breedbase trial name. When given, a
+<code>plot_name</code> column with the plot names used by <code><a href="save_breedbase.html">save_breedbase()</a></code> is
+added to the design (see <code><a href="add_plot_names.html">add_plot_names()</a></code>), so the names can be
+checked with <code><a href="breedbase_check.html">breedbase_check()</a></code> and changed before saving. For a
+multi-location design the location is added, one trial per location.</p></dd>
+
+
+<dt id="arg-plot-name-pattern">plot_name_pattern<a class="anchor" aria-label="anchor" href="#arg-plot-name-pattern"></a></dt>
+<dd><p>Pattern for the plot names, as in
+<code><a href="add_plot_names.html">add_plot_names()</a></code>. Used only with <code>trial_name</code>; <code>{location}</code> is the
+design location.</p></dd>
 
 </dl></div>
     <div class="section level2">

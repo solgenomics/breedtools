@@ -117,7 +117,7 @@ if (requireNamespace("agricolae", quietly = TRUE)) {
   payload <- save_breedbase(converted, trial_name = "RCBD_2026",
     year = 2026, location = "Ibadan", description = "RCBD from agricolae",
     dry_run = TRUE)
-  sheet <- phenotype_template(converted, "RCBD_2026", traits = "yield")
+  sheet <- phenotype_template(converted, "RCBD_2026", traits = "yield", location = "Ibadan")
 }
 #> Dry run without a connection: returning the data that would be sent.
 ```

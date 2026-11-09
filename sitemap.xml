@@ -8,6 +8,9 @@
 <url><loc>https://solgenomics.github.io/breedtools/reference/add_breedbase_analysis_values.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/add_environment_metadata.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/add_pairwise_environment_metadata.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/add_plot_names.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/analysis_plot_names.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/analyze_augmented_prep_design.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/analyze_augmented_prep_two_stage.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/analyze_augmented_row_column_design.html</loc></url>
@@ -24,6 +27,7 @@
 <url><loc>https://solgenomics.github.io/breedtools/reference/augmented_row_column_design.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/augmented_row_column_layouts.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/breedbase_adjusted_trait.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/breedbase_analysis_plots.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/breedbase_check.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/breedbase_lists.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/breedbase_login.html</loc></url>
@@ -93,6 +97,7 @@
 <url><loc>https://solgenomics.github.io/breedtools/reference/run_environment_stratification.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_coordinates.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_first_stage.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/second_stage_values.html</loc></url>
