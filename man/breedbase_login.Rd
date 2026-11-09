@@ -51,6 +51,7 @@ con
 
 }
 \seealso{
+\link{breedbase_connection} for a step-by-step guide,
 \code{\link[=save_breedbase]{save_breedbase()}}, \code{\link[=breedbase_programs]{breedbase_programs()}}, \code{\link[=breedbase_folders]{breedbase_folders()}},
 \code{\link[=breedbase_locations]{breedbase_locations()}}
 }

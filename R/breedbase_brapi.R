@@ -8,6 +8,88 @@
 #   Breedbase plot             = BrAPI observation unit (level "plot")
 # ============================================================================
 
+#' Connecting to a Breedbase instance
+#'
+#' How to connect breedtools to a 'Breedbase' site, such as the
+#' production site \url{https://cassavabase.org} or the test site
+#' \url{https://cassava-test.sgn.cornell.edu}. Every function that reads from
+#' or writes to Breedbase takes the connection returned by
+#' [breedbase_login()] as its `con` argument.
+#'
+#' @section What you need:
+#' \itemize{
+#'   \item The address of the site, e.g. `"https://cassavabase.org"`. Any
+#'     Breedbase site with BrAPI v2 works, for example other crop databases
+#'     on the same software.
+#'   \item A user account on that site, created on the site itself
+#'     ("Login" then "New user"). Accounts are separate for each site: an
+#'     account on cassavabase.org does not exist on cassava-test, and the
+#'     reverse.
+#'   \item To save trials, phenotypes or analyses, your account must be
+#'     allowed to write to the breeding program (the site's curators grant
+#'     this). Reading works with any account.
+#'   \item The 'httr2' package, and optionally 'askpass' for password
+#'     pop-ups.
+#' }
+#'
+#' @section Production and test sites:
+#' A production site (e.g. cassavabase.org) holds the real data of the
+#' breeding programs: everything you save there is shared with them. A test
+#' site (e.g. cassava-test.sgn.cornell.edu) is a copy for trying things out;
+#' use it to learn the workflow or to try a new script before saving to
+#' production. Test sites also protect their web pages with an extra web
+#' password (the browser pop-up "Restricted Test Site"). BrAPI calls, used
+#' for trials, plots and phenotypes, do not need it; the trait composer and
+#' the upload of analyses do. Give it with `site_username` (and
+#' `site_password` or `BREEDBASE_SITE_PASSWORD`). Without it, the login first
+#' tries your Breedbase user name and password there and, in an interactive
+#' session, asks for the web password.
+#'
+#' @section Passwords:
+#' Never write a password in a script. Either leave it empty and type it in
+#' the pop-up, or store it once in your personal `~/.Renviron` file (open it
+#' with `usethis::edit_r_environ()`), then restart R:
+#' \preformatted{
+#' BREEDBASE_PASSWORD=your_breedbase_password
+#' BREEDBASE_SITE_PASSWORD=the_test_site_web_password
+#' }
+#' Scripts run without a console (Rscript, scheduled jobs) need these
+#' variables, since there is nobody to answer the pop-up. Only the access
+#' token is kept in the connection; the password is not stored.
+#'
+#' @section Check the connection:
+#' Printing the connection shows the site, the user and whether a web
+#' password is set. List the programs, folders and locations to confirm that
+#' the account sees the data you expect, and use `dry_run = TRUE` in the
+#' `save_*()` functions to check everything without writing. When the token
+#' expires (a long session), log in again.
+#'
+#' @section Working without a connection:
+#' Designs, analyses, [prepare_breedbase_trial()] and the dry runs of
+#' [save_breedbase()] work offline, so a whole design can be prepared before
+#' logging in.
+#'
+#' @seealso [breedbase_login()], [breedbase_lists], [breedbase_check()],
+#'   [save_breedbase()], [breedbase_phenotypes()],
+#'   [save_breedbase_analysis()]
+#'
+#' @examples
+#' \dontrun{
+#' # Production site
+#' con <- breedbase_login("https://cassavabase.org", username = "your_username")
+#' con
+#' breedbase_programs(con)
+#'
+#' # Test site, with its extra web password
+#' test <- breedbase_login("https://cassava-test.sgn.cornell.edu",
+#'                         username = "your_username",
+#'                         site_username = "web_user_name")
+#' breedbase_locations(test)
+#' }
+#'
+#' @name breedbase_connection
+NULL
+
 #' Log in to a Breedbase server
 #'
 #' Logs in through the BrAPI token call and returns a connection used by the
@@ -34,7 +116,8 @@
 #'
 #' @return A `breedbase_connection` object.
 #'
-#' @seealso [save_breedbase()], [breedbase_programs()], [breedbase_folders()],
+#' @seealso [breedbase_connection] for a step-by-step guide,
+#'   [save_breedbase()], [breedbase_programs()], [breedbase_folders()],
 #'   [breedbase_locations()]
 #'
 #' @examples

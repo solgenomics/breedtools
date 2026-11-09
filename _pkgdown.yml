@@ -90,6 +90,7 @@ reference:
       Log in through BrAPI, list programs, folders and locations, and check
       names before designing.
     contents:
+      - breedbase_connection
       - breedbase_login
       - breedbase_lists
       - breedbase_check
