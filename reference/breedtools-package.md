@@ -182,8 +182,8 @@ Useful links:
 
 ## Author
 
-**Maintainer**: Christiano Simoes <ccsimoes263@gmail.com>
+**Maintainer**: Christiano Costa Simoes <ccs263@cornell.edu>
 
 Authors:
 
-- Christiano Simoes <ccsimoes263@gmail.com>
+- Christiano Costa Simoes <ccs263@cornell.edu>
