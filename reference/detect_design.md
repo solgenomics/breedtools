@@ -33,5 +33,5 @@ design$design
 design$formula
 #> phenotype ~ environment + environment:block_number + accession_name + 
 #>     environment:accession_name
-#> <environment: 0x647164b22dc0>
+#> <environment: 0x578fbad6e918>
 ```
