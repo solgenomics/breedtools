@@ -1,6 +1,7 @@
 # breedtools
 
-Design and analysis of augmented plant breeding trials.
+Design and analysis of plant breeding trials, from single trials to groups
+of environments, with storage in 'Breedbase'.
 
 - **Augmented row-column designs** (Piepho and Williams, 2016):
   unreplicated entries plus replicated checks in rows, columns and
@@ -38,8 +39,11 @@ Design and analysis of augmented plant breeding trials.
 - **agricolae designs**: generate a design with the CRAN package `agricolae`,
   convert and record trial information with `prepare_breedbase_trial()`,
   then use the same `save_breedbase()` and `phenotype_template()` workflow.
-- **Multi-environment tools**: read 'Breedbase' phenotype files, run
-  Hartley's Fmax variance check, and group environments by GxE.
+- **Environment stratification**: read 'Breedbase' phenotype files, test
+  whether trials can be combined (Hartley's Fmax test of error variances),
+  group environments that rank genotypes alike by Lin's (1982) GxE test,
+  and draw the groups on a map. See
+  [Group environments](#group-environments-environment-stratification).
 
 ## Installation
 
@@ -148,6 +152,44 @@ analysis (run A1-A6, then A12), and the full agricolae workflow (Part I).
 Part H reads existing Breedbase trials and lets you choose `"single"`,
 `"two_stage"` or `"both"` through `breedbase_analysis_route`; multiple traits
 are stored in the same analysis projects.
+
+## Group environments (environment stratification)
+
+Before combining trials from several locations, check two things: are the
+error variances similar enough to analyse the trials together, and which
+environments rank the genotypes alike? Both run directly on a phenotype
+file downloaded from 'Breedbase'. The package includes an example with four
+trials:
+
+```r
+pheno_file <- system.file("extdata", "breedbase_pheno.csv", package = "breedtools")
+loc_file   <- system.file("extdata", "breedbase_locations.csv", package = "breedtools")
+
+# 1. Homogeneity of error variances (Hartley's Fmax, simulated critical value)
+vc <- run_breedbase_variance_check(pheno_file, trait_col = "fresh root yield|CO_334:0000013")
+vc$overall_hartley              # all four together: Fmax 5.66 > 5.20, not homogeneous
+vc$maximal_compatible_groups    # largest sets of trials that can be combined
+
+# 2. Group environments by genotype-by-environment interaction (Lin, 1982)
+st <- run_environment_stratification(pheno_file, trait = "fresh root yield")
+st$group_summary
+#>   group_id      locations n_env    ms_ge   f_value    p_value
+#> 1  Group_1 Geneva, Ithaca     2 2.259034 1.8924496 0.09774358
+#> 2  Group_2 Ibadan, Ubiaja     2 4.422801 0.7875387 0.64998303
+
+# 3. Draw the groups on an interactive map
+map_environment_groups(st, read_locations(loc_file, phenotype_data = st))
+```
+
+![Environment groups of the example trials on a map: Geneva and Ithaca (New York) form Group 1, Ibadan and Ubiaja (Nigeria) form Group 2.](man/figures/README-environment-groups.png)
+
+Environments in the same group have a non-significant GxE between them,
+so they can be treated as one target environment. Your own file works the
+same way: download the phenotypes of the trials from 'Breedbase' (`.csv` or
+`.xlsx`) and pass its path; columns are detected automatically.
+`run_environment_stratification(..., export_json = TRUE, output_dir = ...)`
+also saves the results as JSON. The tutorial,
+`vignette("breedtools")`, has the full example (chapter 4).
 
 ## All functions
 

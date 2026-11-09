@@ -149,15 +149,16 @@ read_locations <- function(
 #'   coordinates are named by display labels.
 #' @param strict Logical. If `TRUE`, stop when any environment location has no
 #'   matching coordinates.
-#' @param tiles Background map. The default, `"breedbase"`, uses the same maps
-#'   as the 'Breedbase' Locations page: Esri Street (shown first),
-#'   Topographical and Satellite, with a switch in the top-right corner. They
-#'   need no account or API key and work in the RStudio viewer and in saved
-#'   HTML files. `"street"`, `"topo"` or `"satellite"` shows only that map.
-#'   `"OpenStreetMap"` uses OpenStreetMap's own tiles (these may be refused
-#'   outside a website). Any other value is passed to
-#'   [leaflet::addProviderTiles()] as a provider name; some commercial
-#'   providers need an API key.
+#' @param tiles Background map. All maps are open: free to use, with no
+#'   account, API key or commercial service. The default, `"open"`, offers
+#'   three maps with a switch in the top-right corner: Street (OpenStreetMap,
+#'   shown first), Topographical (OpenTopoMap) and Satellite (Sentinel-2
+#'   cloudless 2016 by EOX, from Copernicus Sentinel data). `"street"`,
+#'   `"topo"` or `"satellite"` shows only that map. They work in the RStudio
+#'   viewer and in saved HTML files; an internet connection is needed to
+#'   load them. Any other value is passed to [leaflet::addProviderTiles()]
+#'   as a provider name; check that provider's terms, as some need an API
+#'   key.
 #'
 #' @return A `leaflet` htmlwidget.
 #'
@@ -180,7 +181,7 @@ map_environment_groups <- function(
     ungrouped_color = "#7A7A7A",
     match_by = "location",
     strict = TRUE,
-    tiles = "breedbase"
+    tiles = "open"
 ) {
   match_by <- match.arg(match_by, c("location", "environment", "environment_label"))
 
@@ -267,52 +268,65 @@ map_environment_groups <- function(
     )
 }
 
-# Keyless Esri maps, the same ones the 'Breedbase' Locations page uses.
-esri_base_maps <- list(
+# Open background maps: no account, API key or commercial service.
+#   Street        OpenStreetMap, data ODbL (openstreetmap.org/copyright)
+#   Topographical OpenTopoMap, CC-BY-SA (opentopomap.org)
+#   Satellite     Sentinel-2 cloudless 2016 by EOX, CC BY 4.0 (s2maps.eu)
+open_base_maps <- list(
   street = list(
     group = "Street",
-    url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-    attribution = "Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012"
+    url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+    max_zoom = 19
   ),
   topo = list(
     group = "Topographical",
-    url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
-    attribution = "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community"
+    url = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution = paste0(
+      "Map data: &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors, SRTM",
+      " | Map style: &copy; <a href=\"https://opentopomap.org\">OpenTopoMap</a> (CC-BY-SA)"
+    ),
+    max_zoom = 17
   ),
   satellite = list(
     group = "Satellite",
-    url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution = "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+    url = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg",
+    attribution = paste0(
+      "<a href=\"https://s2maps.eu\">Sentinel-2 cloudless 2016</a> by EOX IT Services GmbH",
+      " (contains modified Copernicus Sentinel data 2016), CC BY 4.0"
+    ),
+    max_zoom = 14
   )
 )
 
+add_open_tiles <- function(map, layer, group = NULL) {
+  leaflet::addTiles(
+    map,
+    urlTemplate = layer$url,
+    attribution = layer$attribution,
+    group = group,
+    options = leaflet::tileOptions(maxZoom = layer$max_zoom)
+  )
+}
+
 add_base_map <- function(map, tiles) {
   if (!is.character(tiles) || length(tiles) != 1L || is.na(tiles) || !nzchar(tiles)) {
-    stop("`tiles` must be one map name, such as \"breedbase\".", call. = FALSE)
+    stop("`tiles` must be one map name, such as \"open\".", call. = FALSE)
   }
-  if (identical(tiles, "breedbase")) {
-    for (layer in esri_base_maps) {
-      map <- leaflet::addTiles(
-        map,
-        urlTemplate = layer$url,
-        attribution = layer$attribution,
-        group = layer$group
-      )
-    }
+  # "breedbase" and "OpenStreetMap" were earlier names of these maps.
+  if (tiles %in% c("open", "breedbase")) {
+    for (layer in open_base_maps) map <- add_open_tiles(map, layer, group = layer$group)
     # The first group listed is the one shown when the map opens.
-    groups <- vapply(esri_base_maps, `[[`, character(1), "group")
+    groups <- vapply(open_base_maps, `[[`, character(1), "group")
     return(leaflet::addLayersControl(
       map,
       baseGroups = unname(groups),
       options = leaflet::layersControlOptions(collapsed = FALSE)
     ))
   }
-  if (tiles %in% names(esri_base_maps)) {
-    layer <- esri_base_maps[[tiles]]
-    return(leaflet::addTiles(map, urlTemplate = layer$url, attribution = layer$attribution))
-  }
-  if (identical(tiles, "OpenStreetMap")) {
-    return(leaflet::addTiles(map, attribution = "&copy; OpenStreetMap contributors"))
+  if (identical(tiles, "OpenStreetMap")) tiles <- "street"
+  if (tiles %in% names(open_base_maps)) {
+    return(add_open_tiles(map, open_base_maps[[tiles]]))
   }
   leaflet::addProviderTiles(map, tiles)
 }

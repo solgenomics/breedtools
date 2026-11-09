@@ -12,7 +12,7 @@ map_environment_groups(
   ungrouped_color = "#7A7A7A",
   match_by = "location",
   strict = TRUE,
-  tiles = "breedbase"
+  tiles = "open"
 )
 }
 \arguments{
@@ -37,15 +37,16 @@ coordinates are named by display labels.}
 \item{strict}{Logical. If \code{TRUE}, stop when any environment location has no
 matching coordinates.}
 
-\item{tiles}{Background map. The default, \code{"breedbase"}, uses the same maps
-as the 'Breedbase' Locations page: Esri Street (shown first),
-Topographical and Satellite, with a switch in the top-right corner. They
-need no account or API key and work in the RStudio viewer and in saved
-HTML files. \code{"street"}, \code{"topo"} or \code{"satellite"} shows only that map.
-\code{"OpenStreetMap"} uses OpenStreetMap's own tiles (these may be refused
-outside a website). Any other value is passed to
-\code{\link[leaflet:addProviderTiles]{leaflet::addProviderTiles()}} as a provider name; some commercial
-providers need an API key.}
+\item{tiles}{Background map. All maps are open: free to use, with no
+account, API key or commercial service. The default, \code{"open"}, offers
+three maps with a switch in the top-right corner: Street (OpenStreetMap,
+shown first), Topographical (OpenTopoMap) and Satellite (Sentinel-2
+cloudless 2016 by EOX, from Copernicus Sentinel data). \code{"street"},
+\code{"topo"} or \code{"satellite"} shows only that map. They work in the RStudio
+viewer and in saved HTML files; an internet connection is needed to
+load them. Any other value is passed to \code{\link[leaflet:addProviderTiles]{leaflet::addProviderTiles()}}
+as a provider name; check that provider's terms, as some need an API
+key.}
 }
 \value{
 A \code{leaflet} htmlwidget.
