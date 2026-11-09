@@ -114,6 +114,8 @@ Verify a design and record a checklist of what was tested.
 Log in through BrAPI, list programs, folders and locations, and check
 names before designing.
 
+- [`breedbase_connection`](https://solgenomics.github.io/breedtools/reference/breedbase_connection.md)
+  : Connecting to a Breedbase instance
 - [`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md)
   : Log in to a Breedbase server
 - [`breedbase_programs()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md)

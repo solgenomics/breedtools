@@ -36,7 +36,7 @@ analyze_environment_anova(df)
 #>   environment n_genotypes r_eff df_genotype ms_genotype df_error ms_error  mean
 #>   <chr>             <int> <dbl>       <int>       <dbl>    <int>    <dbl> <dbl>
 #> 1 Loc1                  2     4           1        32.0        5    0.400  13.5
-#> 2 Loc2                  2     4           1        32          5    0.400  18.5
+#> 2 Loc2                  2     4           1        32.0        5    0.400  18.5
 #> # ℹ 4 more variables: cv_percent <dbl>, sigma2_g <dbl>, f_value <dbl>,
 #> #   p_value <dbl>
 ```

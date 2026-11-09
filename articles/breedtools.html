@@ -1339,11 +1339,99 @@ results as JSON (<code>export_json = TRUE, output_dir = ...</code>).</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="field-books-and-saving-to-breedbase">5. Field books and saving to ‘Breedbase’<a class="anchor" aria-label="anchor" href="#field-books-and-saving-to-breedbase"></a>
+<h2 id="connecting-to-a-breedbase-instance">5. Connecting to a ‘Breedbase’ instance<a class="anchor" aria-label="anchor" href="#connecting-to-a-breedbase-instance"></a>
+</h2>
+<p>Reading phenotypes from, and saving trials, phenotypes and analyses
+to, ‘Breedbase’ all start with one connection made by
+<code><a href="../reference/breedbase_login.html">breedbase_login()</a></code>. The same code works on any Breedbase
+site; only the address changes. The help page
+<code><a href="../reference/breedbase_connection.html">?breedbase_connection</a></code> has the same guide in the reference
+manual.</p>
+<div class="section level3">
+<h3 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
+</h3>
+<ul>
+<li>
+<strong>The site.</strong> A production site such as <a href="https://cassavabase.org" class="external-link uri">https://cassavabase.org</a>
+holds the real data of the breeding programs: whatever you save there is
+shared with them. A test site such as <a href="https://cassava-test.sgn.cornell.edu" class="external-link uri">https://cassava-test.sgn.cornell.edu</a> is a copy for
+trying things out. Learn the workflow, and try new scripts, on the test
+site first.</li>
+<li>
+<strong>An account on that site.</strong> Create it on the site
+(“Login”, then “New user”). Accounts are separate for each site: your
+cassavabase.org account does not exist on cassava-test.</li>
+<li>
+<strong>Permission to write.</strong> Reading works with any
+account. To save trials, phenotypes or analyses, the site’s curators
+must give your account access to the breeding program.</li>
+<li>
+<strong>The packages.</strong> <code>httr2</code> is required to
+connect; <code>askpass</code> gives a proper password pop-up.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="keep-the-password-out-of-your-scripts">Keep the password out of your scripts<a class="anchor" aria-label="anchor" href="#keep-the-password-out-of-your-scripts"></a>
+</h3>
+<p>Never type a password in a script. Leave it empty and
+<code><a href="../reference/breedbase_login.html">breedbase_login()</a></code> asks for it in a pop-up, or store it once
+in your personal <code>.Renviron</code> file (open it with
+<code>usethis::edit_r_environ()</code> and restart R afterwards):</p>
+<pre><code><span><span class="va">BREEDBASE_PASSWORD</span><span class="op">=</span><span class="va">your_breedbase_password</span></span>
+<span><span class="va">BREEDBASE_SITE_PASSWORD</span><span class="op">=</span><span class="va">the_test_site_web_password</span></span></code></pre>
+<p>Scripts run with <code>Rscript</code> or as scheduled jobs need these
+variables, since nobody is there to answer a pop-up. Only the access
+token is kept in the connection, not the password.</p>
+</div>
+<div class="section level3">
+<h3 id="production-site-cassavabase-org">Production site: cassavabase.org<a class="anchor" aria-label="anchor" href="#production-site-cassavabase-org"></a>
+</h3>
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://cassavabase.org"</span>, username <span class="op">=</span> <span class="st">"your_username"</span><span class="op">)</span></span>
+<span><span class="va">con</span>                          <span class="co"># site, user and time of login</span></span>
+<span><span class="fu"><a href="../reference/breedbase_lists.html">breedbase_programs</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span>      <span class="co"># the programs your account can see</span></span>
+<span><span class="fu"><a href="../reference/breedbase_lists.html">breedbase_folders</a></span><span class="op">(</span><span class="va">con</span>, program <span class="op">=</span> <span class="st">"IITA"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/breedbase_lists.html">breedbase_locations</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="test-site-cassava-test-sgn-cornell-edu">Test site: cassava-test.sgn.cornell.edu<a class="anchor" aria-label="anchor" href="#test-site-cassava-test-sgn-cornell-edu"></a>
+</h3>
+<p>Test sites close their web pages with an extra web password (the
+browser pop-up “Restricted Test Site”). Trials, plots and phenotypes go
+through BrAPI and do not need it; the trait composer and the upload of
+analyses do. Give its user name with <code>site_username</code>; the
+password is read from <code>BREEDBASE_SITE_PASSWORD</code> or asked
+for:</p>
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">test</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://cassava-test.sgn.cornell.edu"</span>,</span>
+<span>                        username <span class="op">=</span> <span class="st">"your_username"</span>,</span>
+<span>                        site_username <span class="op">=</span> <span class="st">"web_user_name"</span><span class="op">)</span></span>
+<span><span class="va">test</span>                         <span class="co"># shows "site (web) password: set for ..."</span></span></code></pre></div>
+<p>Without <code>site_username</code>, the login first tries your
+Breedbase user name and password on the web pages and, in an interactive
+session, asks for the web password. If you skip it, everything still
+works except the direct upload of analyses:
+<code><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis()</a></code> then writes the file for the
+website’s “Upload analysis” form instead.</p>
+</div>
+<div class="section level3">
+<h3 id="check-before-you-write">Check before you write<a class="anchor" aria-label="anchor" href="#check-before-you-write"></a>
+</h3>
+<p>Every <code>save_*()</code> function has <code>dry_run = TRUE</code>,
+which checks the program, folder, location, accessions and names against
+the site without writing anything, and <code><a href="../reference/breedbase_check.html">breedbase_check()</a></code>
+lists every problem at once with close matches. Designs, analyses and
+<code><a href="../reference/prepare_breedbase_trial.html">prepare_breedbase_trial()</a></code> work offline, so a whole trial
+can be prepared before you log in. If a long session ends with an
+authorization error, the token has expired: log in again.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="field-books-and-saving-to-breedbase">6. Field books and saving to ‘Breedbase’<a class="anchor" aria-label="anchor" href="#field-books-and-saving-to-breedbase"></a>
 </h2>
 <p>Every design has a plot-level field book and the columns needed to
 upload the trial to ‘Breedbase’:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">breedbase_design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
 <span><span class="co">#&gt;   plots block all_entries   rep is_control</span></span>
@@ -1384,7 +1472,7 @@ vector passed to the design function (<code>ag_accessions</code> here).
 The converter maps that column to <code>all_entries</code>, keeps plot
 and block numbers, and supplies the replicate and check indicators used
 by the Breedbase uploader.</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ag_accessions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"G1"</span>, <span class="st">"G2"</span>, <span class="st">"G3"</span>, <span class="st">"CHECK_A"</span><span class="op">)</span></span>
 <span><span class="va">ag_randomized</span> <span class="op">&lt;-</span> <span class="fu">agricolae</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/agricolae/man/design.rcbd.html" class="external-link">design.rcbd</a></span><span class="op">(</span><span class="va">ag_accessions</span>, r <span class="op">=</span> <span class="fl">3</span>, seed <span class="op">=</span> <span class="fl">2026</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ag_randomized</span><span class="op">$</span><span class="va">book</span><span class="op">)</span>           <span class="co"># original agricolae data format</span></span>
@@ -1537,7 +1625,7 @@ scripts.</p>
 <p>Replace the example accessions, program and location with names
 already in your database. Log in, check those names and save the new
 trial:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://your-breedbase.org"</span>, <span class="st">"your_username"</span><span class="op">)</span></span>
 <span><span class="va">ag_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_plot_names.html">add_plot_names</a></span><span class="op">(</span><span class="va">ag_design</span><span class="op">)</span>          <span class="co"># see the plot names: ag_design$design$plot_name</span></span>
 <span><span class="fu"><a href="../reference/breedbase_check.html">breedbase_check</a></span><span class="op">(</span><span class="va">con</span>, accessions <span class="op">=</span> <span class="va">ag_design</span>, plot_names <span class="op">=</span> <span class="va">ag_design</span>,</span>
@@ -1637,7 +1725,7 @@ accepts)</td>
 </tbody>
 </table>
 <p>For example, a Latin square and a split plot:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lsd_entries</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"G1"</span>, <span class="st">"G2"</span>, <span class="st">"G3"</span>, <span class="st">"G4"</span>, <span class="st">"G5"</span><span class="op">)</span></span>
 <span><span class="va">lsd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_breedbase_trial.html">prepare_breedbase_trial</a></span><span class="op">(</span><span class="fu">agricolae</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/agricolae/man/design.lsd.html" class="external-link">design.lsd</a></span><span class="op">(</span><span class="va">lsd_entries</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  trial_name <span class="op">=</span> <span class="st">"LSD_2026_Ibadan"</span>, year <span class="op">=</span> <span class="fl">2026</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>, program <span class="op">=</span> <span class="st">"IITA"</span>,</span>
@@ -1692,7 +1780,7 @@ Check the agricolae output first.</li>
 <p>The same workflow is included in the runnable script’s section 8e
 (<code>scripts/breedtools_script.R</code>) and section E5 of the
 packaged example:</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"breedtools_workflow.R"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Part I of <code>scripts/validate_designs.R</code> starts with RCBD
 and lets you select alpha with <code>ag_kind = "Alpha"</code>. It
@@ -1717,7 +1805,7 @@ block and whether it is a check. A multi-location p-rep design becomes
 one trial per location.</p>
 <p>Without a server, <code>dry_run = TRUE</code> shows exactly what
 would be sent:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">to_send</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/save_breedbase.html">save_breedbase</a></span><span class="op">(</span><span class="va">rc</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>, year <span class="op">=</span> <span class="fl">2026</span>,</span>
 <span>                          location <span class="op">=</span> <span class="st">"Ibadan"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                          description <span class="op">=</span> <span class="st">"Advanced yield trial of 108 lines and 4 checks, Ibadan 2026"</span><span class="op">)</span></span>
@@ -1756,7 +1844,7 @@ would be sent:</p>
 read from the <code>BREEDBASE_PASSWORD</code> environment variable;
 never write it in a script), look up the names, make a dry run, and
 save:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://cassavabase.org"</span>, username <span class="op">=</span> <span class="st">"your_username"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/breedbase_lists.html">breedbase_programs</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/breedbase_lists.html">breedbase_folders</a></span><span class="op">(</span><span class="va">con</span>, program <span class="op">=</span> <span class="st">"IITA"</span><span class="op">)</span></span>
@@ -1811,7 +1899,7 @@ purpose, material, location and season; it is shown on the trial page in
 Breedbase), and every plot needs a name that is unique in the whole
 database. By default plot names are made as
 <code>trialName_location_accession_block_rep</code>:</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">to_send</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="va">p</span><span class="op">$</span><span class="va">observationUnitName</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "AYT_2026_Ibadan_Ibadan_LINE_022_1_1" "AYT_2026_Ibadan_Ibadan_CHECK_C_1_1" </span></span>
 <span><span class="co">#&gt; [3] "AYT_2026_Ibadan_Ibadan_LINE_099_1_1" "AYT_2026_Ibadan_Ibadan_LINE_060_1_1"</span></span>
@@ -1828,13 +1916,13 @@ to the field book.</p>
 <code><a href="../reference/add_plot_names.html">add_plot_names()</a></code>: the names go to a <code>plot_name</code>
 column of the design, which can be edited and is used as it is by
 <code><a href="../reference/save_breedbase.html">save_breedbase()</a></code> and <code><a href="../reference/phenotype_template.html">phenotype_template()</a></code>:</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rc_named</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_plot_names.html">add_plot_names</a></span><span class="op">(</span><span class="va">rc</span>, <span class="st">"AYT_2026"</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rc_named</span><span class="op">$</span><span class="va">design</span><span class="op">$</span><span class="va">plot_name</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "AYT_2026_Ibadan_LINE_022_1_1" "AYT_2026_Ibadan_CHECK_C_1_1" </span></span>
 <span><span class="co">#&gt; [3] "AYT_2026_Ibadan_LINE_099_1_1" "AYT_2026_Ibadan_LINE_060_1_1"</span></span>
 <span><span class="co">#&gt; [5] "AYT_2026_Ibadan_CHECK_A_2_2"  "AYT_2026_Ibadan_LINE_045_2_1"</span></span></code></pre></div>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/save_breedbase.html">save_breedbase</a></span><span class="op">(</span><span class="va">rc</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>, year <span class="op">=</span> <span class="fl">2026</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>,</span>
 <span>                      plot_name_pattern <span class="op">=</span> <span class="st">"{trial}_{plot}_r{row}c{col}"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                      description <span class="op">=</span> <span class="st">"Advanced yield trial of 108 lines and 4 checks, Ibadan 2026"</span><span class="op">)</span></span>
@@ -1852,7 +1940,7 @@ design; the most practical way is from the GPS of one corner of the
 field (the outer corner of the plot in row 1, column 1), the plot size
 and the alleys, in metres. The four corners of every plot are calculated
 from its row and column:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rc_gps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_plot_coordinates.html">add_plot_coordinates</a></span><span class="op">(</span><span class="va">rc</span>, origin <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7.4931</span>, <span class="fl">3.9035</span><span class="op">)</span>,</span>
 <span>                               plot_width <span class="op">=</span> <span class="fl">3</span>, plot_length <span class="op">=</span> <span class="fl">5</span>, row_gap <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rc_gps</span><span class="op">$</span><span class="va">design</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"plots"</span>, <span class="st">"row"</span>, <span class="st">"col"</span>, <span class="st">"latitude"</span>, <span class="st">"longitude"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
@@ -1874,7 +1962,7 @@ Breedbase’s “Upload plot GPS” form.</p>
 (they are sent just after the plots are created, as Breedbase stores
 them, and read back to check). For a trial that is already saved,
 e.g. measured after planting:</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/save_breedbase_coordinates.html">save_breedbase_coordinates</a></span><span class="op">(</span><span class="va">rc_gps</span>, <span class="va">con</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -1887,7 +1975,7 @@ Breedbase, with or without its ontology id
 <code>"fresh root yield|CO_334:0000013"</code>, as in a Breedbase
 phenotype download). <code><a href="../reference/phenotype_template.html">phenotype_template()</a></code> gives a sheet
 with the plot names of the trial and an empty column per trait:</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sheet</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/phenotype_template.html">phenotype_template</a></span><span class="op">(</span><span class="va">rc</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span>,</span>
 <span>                            traits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fresh root yield"</span>, <span class="st">"dry matter content percentage"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sheet</span><span class="op">)</span></span>
@@ -1904,7 +1992,7 @@ with the plot names of the trial and an empty column per trait:</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   `dry matter content percentage` &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>Fill it in (here with simulated values; empty cells are skipped) and
 see what would be sent, one row per value:</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">sheet</span><span class="op">$</span><span class="va">`fresh root yield`</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sheet</span><span class="op">)</span>, <span class="fl">25</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">sheet</span><span class="op">$</span><span class="va">`dry matter content percentage`</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sheet</span><span class="op">)</span>, <span class="fl">32</span>, <span class="fl">3</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
@@ -1925,7 +2013,7 @@ problems are listed together; then the values are saved in batches and
 read back. Your account needs “submitter” rights. Long data (one row per
 value) works too, and a time-stamp column allows repeated measurements
 of a trait:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes</a></span><span class="op">(</span><span class="va">sheet</span>, <span class="va">con</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>   <span class="co"># check plots and traits</span></span>
 <span><span class="fu"><a href="../reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes</a></span><span class="op">(</span><span class="va">sheet</span>, <span class="va">con</span><span class="op">)</span>                   <span class="co"># save and verify</span></span>
 <span></span>
@@ -1947,7 +2035,7 @@ does not exist yet; <code><a href="../reference/breedbase_adjusted_trait.html">b
 first. Your own traits can be given with <code>as_trait</code>. A
 second-stage result, one value per genotype, is saved as a new Breedbase
 analysis, as the Breedbase mixed-models tool does.</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">field</span> <span class="op">&lt;-</span> <span class="va">rc</span><span class="op">$</span><span class="va">design</span></span>
 <span><span class="va">field</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="va">sheet</span><span class="op">$</span><span class="va">`fresh root yield`</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">field</span><span class="op">$</span><span class="va">plots</span>, <span class="va">sheet</span><span class="op">$</span><span class="va">plot_number</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">fit_yield</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/analyze_augmented_row_column_design.html">analyze_augmented_row_column_design</a></span><span class="op">(</span><span class="va">field</span>, <span class="st">"yield"</span><span class="op">)</span></span>
@@ -1975,7 +2063,7 @@ analysis, as the Breedbase mixed-models tool does.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> LINE_023                37.3</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> LINE_046                35.9</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> LINE_031                35.8</span></span></code></pre></div>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/breedbase_adjusted_trait.html">breedbase_adjusted_trait</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"fresh root yield"</span><span class="op">)</span>   <span class="co"># the trait for adjusted values: exists?</span></span>
 <span><span class="fu"><a href="../reference/save_breedbase_first_stage.html">save_breedbase_first_stage</a></span><span class="op">(</span><span class="va">stage1</span>, <span class="va">con</span><span class="op">)</span>              <span class="co"># creates it if needed, then saves</span></span>
 <span><span class="fu"><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis</a></span><span class="op">(</span><span class="va">stage2</span>, <span class="va">con</span>, analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_means"</span>, program <span class="op">=</span> <span class="st">"IITA"</span>,</span>
@@ -1994,7 +2082,7 @@ accession of the field plot (or
 <code>&lt;analysis name&gt;_&lt;accession&gt;</code> for an analysis of
 accessions). <code><a href="../reference/analysis_plot_names.html">analysis_plot_names()</a></code> shows them before
 saving:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/analysis_plot_names.html">analysis_plot_names</a></span><span class="op">(</span><span class="va">stage1</span>, <span class="st">"AYT_2026_Ibadan_stage1"</span>, level <span class="op">=</span> <span class="st">"plot"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
 <span><span class="co">#&gt;   analysis_plot_name                      plot_name accession `fresh root yield`</span></span>
@@ -2010,7 +2098,7 @@ the Breedbase statistics ontology, “trait|statistic|COMP:id”. A dry run
 lists the name each trait will get and whether that composed trait
 already exists; to use another statistic, list them and give one with
 <code>statistic</code>:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis</a></span><span class="op">(</span><span class="va">stage1</span>, <span class="va">con</span>, analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_stage1"</span>, program <span class="op">=</span> <span class="st">"IITA"</span>,</span>
 <span>                        description <span class="op">=</span> <span class="st">"Row-column model"</span>, level <span class="op">=</span> <span class="st">"plot"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#   [OK]   'fresh root yield' will be stored as</span></span>
@@ -2023,7 +2111,7 @@ already exists; to use another statistic, list them and give one with
 from Breedbase, with their accession, design and the values of every
 trait in the analysis. It works for any analysis you can see, also one
 saved earlier:</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">saved_stocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_analysis_plots.html">breedbase_analysis_plots</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"AYT_2026_Ibadan_stage1"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">saved_stocks</span><span class="op">)</span></span></code></pre></div>
 <p>Plots without any value (a lost plot, an outlier removed before the
@@ -2036,7 +2124,7 @@ through their values.</p>
 <p>Analyze the second trait on the same field plots. In this example the
 dry matter measurements are simulated; replace them with your field
 data:</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">84</span><span class="op">)</span></span>
 <span><span class="va">field</span><span class="op">$</span><span class="va">dry_matter</span> <span class="op">&lt;-</span> <span class="fl">32</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">field</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">dm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/analyze_augmented_row_column_design.html">analyze_augmented_row_column_design</a></span><span class="op">(</span><span class="va">field</span>, <span class="st">"dry_matter"</span><span class="op">)</span></span>
@@ -2057,7 +2145,7 @@ data:</p>
 those same projects. Use <code>level = "plot"</code> for the first-stage
 plot analysis and <code>level = "accession"</code> for the
 genotype-means analysis:</p>
-<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The stocks of the saved analysis, and the values to add for them:</span></span>
 <span><span class="va">stocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_analysis_plots.html">breedbase_analysis_plots</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"AYT_2026_Ibadan_stage1"</span><span class="op">)</span></span>
 <span><span class="va">dm_stage1</span> <span class="op">&lt;-</span> <span class="va">dm_stage1</span><span class="op">[</span><span class="va">dm_stage1</span><span class="op">$</span><span class="va">plot_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">stocks</span><span class="op">$</span><span class="va">plot_name</span>, <span class="op">]</span></span>

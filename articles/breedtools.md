@@ -1384,7 +1384,94 @@ Print `group_map` to open the ‘leaflet’ map.
 can also export the results as JSON
 (`export_json = TRUE, output_dir = ...`).
 
-## 5. Field books and saving to ‘Breedbase’
+## 5. Connecting to a ‘Breedbase’ instance
+
+Reading phenotypes from, and saving trials, phenotypes and analyses to,
+‘Breedbase’ all start with one connection made by
+[`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md).
+The same code works on any Breedbase site; only the address changes. The
+help page
+[`?breedbase_connection`](https://solgenomics.github.io/breedtools/reference/breedbase_connection.md)
+has the same guide in the reference manual.
+
+### Before you start
+
+- **The site.** A production site such as <https://cassavabase.org>
+  holds the real data of the breeding programs: whatever you save there
+  is shared with them. A test site such as
+  <https://cassava-test.sgn.cornell.edu> is a copy for trying things
+  out. Learn the workflow, and try new scripts, on the test site first.
+- **An account on that site.** Create it on the site (“Login”, then “New
+  user”). Accounts are separate for each site: your cassavabase.org
+  account does not exist on cassava-test.
+- **Permission to write.** Reading works with any account. To save
+  trials, phenotypes or analyses, the site’s curators must give your
+  account access to the breeding program.
+- **The packages.** `httr2` is required to connect; `askpass` gives a
+  proper password pop-up.
+
+### Keep the password out of your scripts
+
+Never type a password in a script. Leave it empty and
+[`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md)
+asks for it in a pop-up, or store it once in your personal `.Renviron`
+file (open it with `usethis::edit_r_environ()` and restart R
+afterwards):
+
+    BREEDBASE_PASSWORD=your_breedbase_password
+    BREEDBASE_SITE_PASSWORD=the_test_site_web_password
+
+Scripts run with `Rscript` or as scheduled jobs need these variables,
+since nobody is there to answer a pop-up. Only the access token is kept
+in the connection, not the password.
+
+### Production site: cassavabase.org
+
+``` r
+
+con <- breedbase_login("https://cassavabase.org", username = "your_username")
+con                          # site, user and time of login
+breedbase_programs(con)      # the programs your account can see
+breedbase_folders(con, program = "IITA")
+breedbase_locations(con)
+```
+
+### Test site: cassava-test.sgn.cornell.edu
+
+Test sites close their web pages with an extra web password (the browser
+pop-up “Restricted Test Site”). Trials, plots and phenotypes go through
+BrAPI and do not need it; the trait composer and the upload of analyses
+do. Give its user name with `site_username`; the password is read from
+`BREEDBASE_SITE_PASSWORD` or asked for:
+
+``` r
+
+test <- breedbase_login("https://cassava-test.sgn.cornell.edu",
+                        username = "your_username",
+                        site_username = "web_user_name")
+test                         # shows "site (web) password: set for ..."
+```
+
+Without `site_username`, the login first tries your Breedbase user name
+and password on the web pages and, in an interactive session, asks for
+the web password. If you skip it, everything still works except the
+direct upload of analyses:
+[`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)
+then writes the file for the website’s “Upload analysis” form instead.
+
+### Check before you write
+
+Every `save_*()` function has `dry_run = TRUE`, which checks the
+program, folder, location, accessions and names against the site without
+writing anything, and
+[`breedbase_check()`](https://solgenomics.github.io/breedtools/reference/breedbase_check.md)
+lists every problem at once with close matches. Designs, analyses and
+[`prepare_breedbase_trial()`](https://solgenomics.github.io/breedtools/reference/prepare_breedbase_trial.md)
+work offline, so a whole trial can be prepared before you log in. If a
+long session ends with an authorization error, the token has expired:
+log in again.
+
+## 6. Field books and saving to ‘Breedbase’
 
 Every design has a plot-level field book and the columns needed to
 upload the trial to ‘Breedbase’:

@@ -48,6 +48,6 @@ check_setup(out_dir = file.path(tempdir(), "my_trials"))
 #>   [OK]   breedtools 0.1.0 is loaded
 #>   [OK]   lme4 is installed (needed for mixed models: random blocks, random entries, random genotype x location)
 #>   [OK]   SpATS is installed (needed for spatial models)
-#>   [OK]   files can be saved in /tmp/Rtmpblwcuu/my_trials
+#>   [OK]   files can be saved in /tmp/RtmpS7Dwvk/my_trials
 #> Everything is ready to start a new design.
 ```

@@ -56,6 +56,8 @@ a pop-up.
 
 ## See also
 
+[breedbase_connection](https://solgenomics.github.io/breedtools/reference/breedbase_connection.md)
+for a step-by-step guide,
 [`save_breedbase()`](https://solgenomics.github.io/breedtools/reference/save_breedbase.md),
 [`breedbase_programs()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md),
 [`breedbase_folders()`](https://solgenomics.github.io/breedtools/reference/breedbase_lists.md),
