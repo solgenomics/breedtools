@@ -8,7 +8,9 @@ includes
 (`system.file("extdata", "cxgn_statistics.obo", package = "breedtools")`),
 so the terms can be listed and checked without a server. With a
 connection, the terms of that Breedbase are listed and compared with the
-ontology file.
+ontology file. When Breedbase adds statistics, the bundled copy is
+refreshed with the script `data-raw/update_statistics_ontology.R` of the
+package source.
 
 ## Usage
 

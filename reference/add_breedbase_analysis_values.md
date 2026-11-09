@@ -21,6 +21,7 @@ add_breedbase_analysis_values(
   plot = "plot_name",
   accession = "accession",
   statistic = NULL,
+  estimate = NULL,
   overwrite = FALSE,
   dry_run = FALSE,
   confirm = interactive()
@@ -68,10 +69,19 @@ add_breedbase_analysis_values(
 - statistic:
 
   Optional statistic (see
-  [`breedbase_statistics()`](https://solgenomics.github.io/breedtools/reference/breedbase_statistics.md)):
-  the values are then stored under "trait\|statistic" (a composed trait,
-  created if needed), e.g. the single-stage means next to the two-stage
-  means in the same analysis.
+  [`breedbase_statistics()`](https://solgenomics.github.io/breedtools/reference/breedbase_statistics.md)).
+  Values are always stored under "trait\|statistic" (a composed trait,
+  created if needed), never under the plain trait, as Breedbase does for
+  analyses. By default the statistic the analysis already uses (from its
+  stored traits); give another to keep, e.g., single-stage means next to
+  two-stage means in the same analysis.
+
+- estimate:
+
+  When the analysis has no statistic yet: `"blue"`, `"blup"` or
+  `"spatial"`, as in
+  [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)
+  (by default from the data).
 
 - overwrite:
 

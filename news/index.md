@@ -2,6 +2,29 @@
 
 ## breedtools 0.1.0
 
+- [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)
+  lists, before saving and in a dry run, the composed trait each trait
+  will be stored under (“trait\|statistic\|COMP:id”) and whether it
+  exists; the dry run returns them as `traits`. Choose another statistic
+  from `breedbase_statistics(con)` with `statistic`.
+
+- The bundled statistics ontology (`cxgn_statistics.obo`) matches
+  Breedbase (solgenomics/sgn, November 2026);
+  `data-raw/update_statistics_ontology.R` refreshes it when Breedbase
+  adds statistics.
+
+- [`add_breedbase_analysis_values()`](https://solgenomics.github.io/breedtools/reference/add_breedbase_analysis_values.md)
+  never stores analysis values under a plain trait: each trait is
+  composed with a statistic (“trait\|statistic\|COMP:id”), by default
+  the one the analysis already uses, as Breedbase does when it saves an
+  analysis. Before, values added without `statistic` went under the
+  plain trait (e.g. “dry matter content percentage\|CO_334:0000092”).
+
+- [`analysis_plot_names()`](https://solgenomics.github.io/breedtools/reference/analysis_plot_names.md)
+  previews the plot and accession names of an analysis before saving;
+  [`breedbase_analysis_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_analysis_plots.md)
+  reads the plots, accessions and values of a saved analysis.
+
 - Plot GPS coordinates: the new
   [`add_plot_coordinates()`](https://solgenomics.github.io/breedtools/reference/add_plot_coordinates.md)
   adds them to a design, calculated from the GPS of the field corner,

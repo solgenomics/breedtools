@@ -1878,11 +1878,25 @@ saving:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> AYT_2026_Ibadan_stage1_AYT_2026_Ibadan… AYT_2026… LINE_060                21.7</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> AYT_2026_Ibadan_stage1_AYT_2026_Ibadan… AYT_2026… CHECK_A                 23.3</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> AYT_2026_Ibadan_stage1_AYT_2026_Ibadan… AYT_2026… LINE_045                17.6</span></span></code></pre></div>
+<p>The values are stored under the trait composed with a statistic of
+the Breedbase statistics ontology, “trait|statistic|COMP:id”. A dry run
+lists the name each trait will get and whether that composed trait
+already exists; to use another statistic, list them and give one with
+<code>statistic</code>:</p>
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis</a></span><span class="op">(</span><span class="va">stage1</span>, <span class="va">con</span>, analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_stage1"</span>, program <span class="op">=</span> <span class="st">"IITA"</span>,</span>
+<span>                        description <span class="op">=</span> <span class="st">"Row-column model"</span>, level <span class="op">=</span> <span class="st">"plot"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#   [OK]   'fresh root yield' will be stored as</span></span>
+<span><span class="co">#          'fresh root yield|Adjusted means from BLUEs using LMER R|COMP:…'</span></span>
+<span><span class="fu"><a href="../reference/breedbase_statistics.html">breedbase_statistics</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"BLUP"</span><span class="op">)</span>                     <span class="co"># the statistics to choose from</span></span>
+<span><span class="fu"><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis</a></span><span class="op">(</span><span class="va">stage1</span>, <span class="va">con</span>, analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_stage1"</span>, program <span class="op">=</span> <span class="st">"IITA"</span>,</span>
+<span>                        description <span class="op">=</span> <span class="st">"Row-column model"</span>, level <span class="op">=</span> <span class="st">"plot"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                        statistic <span class="op">=</span> <span class="st">"Adjusted means from BLUPs using LMER R"</span><span class="op">)</span></span></code></pre></div>
 <p>After saving, <code><a href="../reference/breedbase_analysis_plots.html">breedbase_analysis_plots()</a></code> reads them back
 from Breedbase, with their accession, design and the values of every
 trait in the analysis. It works for any analysis you can see, also one
 saved earlier:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">saved_stocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_analysis_plots.html">breedbase_analysis_plots</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"AYT_2026_Ibadan_stage1"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">saved_stocks</span><span class="op">)</span></span></code></pre></div>
 <p>Plots without any value (a lost plot, an outlier removed before the
@@ -1895,7 +1909,7 @@ through their values.</p>
 <p>Analyze the second trait on the same field plots. In this example the
 dry matter measurements are simulated; replace them with your field
 data:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">84</span><span class="op">)</span></span>
 <span><span class="va">field</span><span class="op">$</span><span class="va">dry_matter</span> <span class="op">&lt;-</span> <span class="fl">32</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">field</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">dm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/analyze_augmented_row_column_design.html">analyze_augmented_row_column_design</a></span><span class="op">(</span><span class="va">field</span>, <span class="st">"dry_matter"</span><span class="op">)</span></span>
@@ -1916,7 +1930,7 @@ data:</p>
 those same projects. Use <code>level = "plot"</code> for the first-stage
 plot analysis and <code>level = "accession"</code> for the
 genotype-means analysis:</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The stocks of the saved analysis, and the values to add for them:</span></span>
 <span><span class="va">stocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/breedbase_analysis_plots.html">breedbase_analysis_plots</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"AYT_2026_Ibadan_stage1"</span><span class="op">)</span></span>
 <span><span class="va">dm_stage1</span> <span class="op">&lt;-</span> <span class="va">dm_stage1</span><span class="op">[</span><span class="va">dm_stage1</span><span class="op">$</span><span class="va">plot_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">stocks</span><span class="op">$</span><span class="va">plot_name</span>, <span class="op">]</span></span>
@@ -1930,12 +1944,17 @@ genotype-means analysis:</p>
 <span>  analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_means"</span>, level <span class="op">=</span> <span class="st">"accession"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/add_breedbase_analysis_values.html">add_breedbase_analysis_values</a></span><span class="op">(</span><span class="va">dm_stage2</span>, <span class="va">con</span>,</span>
 <span>  analysis_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan_means"</span>, level <span class="op">=</span> <span class="st">"accession"</span><span class="op">)</span></span></code></pre></div>
-<p>The analysis must already contain those plots or accessions, and the
-new trait must exist in Breedbase. Its connected dry run verifies the
-names and values. Existing values for the same stock and trait require
-an explicit <code>overwrite = TRUE</code> to replace them. Part A11 of
-<code>scripts/validate_designs.R</code> demonstrates this with a second
-trait analyzed across all locations.</p>
+<p>The analysis must already contain those plots or accessions. Analysis
+values are never stored under the plain trait: like the values saved
+with the analysis (e.g. “fresh root yield|Adjusted Means from Spatial
+Correction using SpATS R|COMP:0000379”), each trait is stored composed
+with the statistic of the analysis, “dry matter content
+percentage|<statistic>|COMP:id”, created when it does not exist yet
+(another statistic can be given with <code>statistic</code>). Its
+connected dry run verifies the names and values. Existing values for the
+same stock and trait require an explicit <code>overwrite = TRUE</code>
+to replace them. Part A11 of <code>scripts/validate_designs.R</code>
+demonstrates this with a second trait analyzed across all locations.</statistic></p>
 </div>
 </div>
 <div class="section level2">

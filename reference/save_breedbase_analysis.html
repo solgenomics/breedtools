@@ -224,7 +224,9 @@ as it is; a new one (special characters replaced with <code>"_"</code>) is creat
     <p>Invisibly, a tibble with the analysis name and id, the number of
 rows (accessions or plots) sent and read back, and the analysis page; or,
 when the web pages are closed, a list with the upload <code>file</code> and the
-<code>form</code> values.</p>
+<code>form</code> values. A dry run returns the <code>file</code>, the <code>form</code> and <code>traits</code>:
+each trait with the composed name it will be stored under
+(<code>stored_as</code>) and <code>status</code> (<code>"exists"</code> or <code>"new"</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -246,6 +248,19 @@ their web pages with an extra web password. With it (see
 everything is checked through BrAPI and the file of the "Upload analysis"
 form is written, with the value of every form field printed: upload it in
 the browser and Breedbase creates the same analysis project.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="the-stored-trait-names">The stored trait names<a class="anchor" aria-label="anchor" href="#the-stored-trait-names"></a></h2>
+
+
+<p>Breedbase stores the values of an analysis under the trait composed with
+the statistic, "trait|statistic|COMP:id", e.g. "fresh root yield|Adjusted
+Means from Spatial Correction using SpATS R|COMP:0000379", never under the
+plain trait. Before saving (and in a dry run) each trait is listed with
+the composed name it will get, and whether that composed trait already
+exists or Breedbase will create it. To use another statistic, list them
+with <code><a href="breedbase_statistics.html">breedbase_statistics()</a></code> and give one with <code>statistic</code>; run with
+<code>dry_run = TRUE</code> to see the names again.</p>
     </div>
 
     <div class="section level2">

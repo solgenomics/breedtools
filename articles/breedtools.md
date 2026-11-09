@@ -1994,6 +1994,24 @@ head(analysis_plot_names(stage1, "AYT_2026_Ibadan_stage1", level = "plot"))
 #> 6 AYT_2026_Ibadan_stage1_AYT_2026_Ibadan… AYT_2026… LINE_045                17.6
 ```
 
+The values are stored under the trait composed with a statistic of the
+Breedbase statistics ontology, “trait\|statistic\|COMP:id”. A dry run
+lists the name each trait will get and whether that composed trait
+already exists; to use another statistic, list them and give one with
+`statistic`:
+
+``` r
+
+save_breedbase_analysis(stage1, con, analysis_name = "AYT_2026_Ibadan_stage1", program = "IITA",
+                        description = "Row-column model", level = "plot", dry_run = TRUE)
+#   [OK]   'fresh root yield' will be stored as
+#          'fresh root yield|Adjusted means from BLUEs using LMER R|COMP:…'
+breedbase_statistics(con, "BLUP")                     # the statistics to choose from
+save_breedbase_analysis(stage1, con, analysis_name = "AYT_2026_Ibadan_stage1", program = "IITA",
+                        description = "Row-column model", level = "plot", dry_run = TRUE,
+                        statistic = "Adjusted means from BLUPs using LMER R")
+```
+
 After saving,
 [`breedbase_analysis_plots()`](https://solgenomics.github.io/breedtools/reference/breedbase_analysis_plots.md)
 reads them back from Breedbase, with their accession, design and the
@@ -2057,10 +2075,15 @@ add_breedbase_analysis_values(dm_stage2, con,
   analysis_name = "AYT_2026_Ibadan_means", level = "accession")
 ```
 
-The analysis must already contain those plots or accessions, and the new
-trait must exist in Breedbase. Its connected dry run verifies the names
-and values. Existing values for the same stock and trait require an
-explicit `overwrite = TRUE` to replace them. Part A11 of
+The analysis must already contain those plots or accessions. Analysis
+values are never stored under the plain trait: like the values saved
+with the analysis (e.g. “fresh root yield\|Adjusted Means from Spatial
+Correction using SpATS R\|COMP:0000379”), each trait is stored composed
+with the statistic of the analysis, “dry matter content
+percentage\|\|COMP:id”, created when it does not exist yet (another
+statistic can be given with `statistic`). Its connected dry run verifies
+the names and values. Existing values for the same stock and trait
+require an explicit `overwrite = TRUE` to replace them. Part A11 of
 `scripts/validate_designs.R` demonstrates this with a second trait
 analyzed across all locations.
 
