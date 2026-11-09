@@ -905,8 +905,15 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   prog <- bb_find_program(con, program)
   cat("  [OK]   breeding program '", prog$program, "'\n", sep = "")
   problems <- character(0)
-  if ((web_ok && !is.na(bb_find_analysis(con, analysis_name))) || !is.na(bb_find_study(con, analysis_name))) {
-    problems <- c(problems, paste0("An analysis or trial named '", analysis_name,
+  existing_analysis <- if (web_ok) bb_find_analysis(con, analysis_name) else NA_character_
+  if (!is.na(existing_analysis)) {
+    problems <- c(problems, paste0(
+      "An analysis named '", analysis_name, "' already exists (", con$url, "/analyses/", existing_analysis,
+      "). It may be left from an earlier save that failed: open it and check its values. ",
+      "Delete it on that page to save again with this name, add values with add_breedbase_analysis_values(), ",
+      "or choose another `analysis_name`."))
+  } else if (!is.na(bb_find_study(con, analysis_name))) {
+    problems <- c(problems, paste0("A trial named '", analysis_name,
                                    "' already exists. Choose another `analysis_name`."))
   } else {
     cat("  [OK]   analysis name '", analysis_name, "' is free", if (!web_ok) " (as a trial; analyses are checked by the website)", "\n", sep = "")
@@ -997,8 +1004,10 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
       as.character(res$analysis_id %||% NA)
     },
     find = function() bb_find_analysis(con, analysis_name),
-    attempts = 1
+    attempts = 1, check_on_error = TRUE
   )
+  server_error <- attr(analysis_id, "server_error")
+  analysis_id <- as.character(analysis_id)
   if (!is.null(folder)) {
     if (is.na(folder_id)) folder_id <- bb_create_folder(con, prog, folder, saved = "the analysis")
     bb_move_to_folder(con, analysis_id, folder_id, what = paste0("put analysis '", analysis_name,
@@ -1011,6 +1020,13 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   cat(sprintf("  %s analysis '%s' saved with %s of %d %s\n", status, analysis_name,
               if (is.na(n_back)) "?" else as.character(n_back), length(stocks), what))
   cat("Open the analysis in Breedbase: ", page, "\n", sep = "")
+  if (!identical(status, "[OK]  ")) {
+    warning("Analysis '", analysis_name, "' was created, but ",
+            if (is.na(n_back)) "its values could not be read back" else paste(n_back, "of", length(stocks), what, "have values"),
+            if (!is.null(server_error)) paste0(" (", server_error, ")") else "",
+            ". Open ", page, " to check it. If values are missing, delete the analysis on that page and save again, ",
+            "or add them with add_breedbase_analysis_values().", call. = FALSE)
+  }
   invisible(tibble::tibble(analysis_name = analysis_name, analysis_db_id = analysis_id, level = level,
                            rows_sent = length(stocks), rows_found = n_back, analysis_page = page))
 }

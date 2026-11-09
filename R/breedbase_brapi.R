@@ -1168,7 +1168,13 @@ bb_search_names <- function(con, entity, field, name_field, names, batch, label,
 # been done, so look for the result for a while before trying once more.
 # Breedbase refuses folder, trial and plot names that already exist, so a
 # second try cannot make duplicates.
-bb_write_checked <- function(what, write, find, attempts = 2, exists_ok = FALSE, exists_hint = NULL) {
+#
+# With `check_on_error = TRUE`, a server error (HTTP 5xx) is not taken as
+# "nothing written": some Breedbase writes (e.g. analyses) create the record
+# first and fail later, so the record is looked for before giving up. When
+# it is there, its id is returned with attribute `server_error` set.
+bb_write_checked <- function(what, write, find, attempts = 2, exists_ok = FALSE, exists_hint = NULL,
+                             check_on_error = FALSE) {
   wait <- getOption("breedtools.write_wait", 20)
   checks <- getOption("breedtools.write_checks", 9)
   for (attempt in seq_len(attempts)) {
@@ -1176,6 +1182,14 @@ bb_write_checked <- function(what, write, find, attempts = 2, exists_ok = FALSE,
     if (!inherits(res, "breedbase_error")) {
       if (is.na(res)) stop("Breedbase did not return an id when trying to ", what, ".", call. = FALSE)
       return(res)
+    }
+    if (isTRUE(check_on_error) && !isTRUE(res$busy) && !is.na(res$code) && res$code >= 500) {
+      id <- tryCatch(find(), breedbase_error = function(e) NA_character_)
+      if (!is.na(id)) {
+        cat("  [WARN] the server failed (HTTP ", res$code, ") while trying to ", what,
+            ", but it was created; checking what was stored\n", sep = "")
+        return(structure(id, server_error = conditionMessage(res)))
+      }
     }
     if (isTRUE(exists_ok) && identical(as.integer(res$code), 409L)) {
       # Already there (e.g. made by an earlier save that timed out): use it.
