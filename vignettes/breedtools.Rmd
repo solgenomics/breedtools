@@ -1,5 +1,7 @@
 ---
 title: "Designing and analysing breeding trials with breedtools"
+author: "Christiano Costa Simoes (ccs263@cornell.edu)"
+date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Designing and analysing breeding trials with breedtools}

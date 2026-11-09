@@ -2,7 +2,8 @@ Package: breedtools
 Title: Design, Analysis and 'Breedbase' Storage of Plant Breeding Trials
 Version: 0.1.0
 Authors@R:
-    person("Christiano", "Simoes", email = "ccsimoes263@gmail.com", role = c("aut", "cre"))
+    person(given = c("Christiano", "Costa"), family = "Simoes",
+           email = "ccs263@cornell.edu", role = c("aut", "cre"))
 Description: Designs and analyses plant breeding field trials, from
     early generations with a single plot per entry to fully replicated
     trials, and saves the designs to a 'Breedbase' database. Suggests layout

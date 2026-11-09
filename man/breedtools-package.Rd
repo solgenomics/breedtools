@@ -130,11 +130,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Christiano Simoes \email{ccsimoes263@gmail.com}
+\strong{Maintainer}: Christiano Costa Simoes \email{ccs263@cornell.edu}
 
 Authors:
 \itemize{
-  \item Christiano Simoes \email{ccsimoes263@gmail.com}
+  \item Christiano Costa Simoes \email{ccs263@cornell.edu}
 }
 
 }
