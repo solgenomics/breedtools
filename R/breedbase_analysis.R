@@ -294,7 +294,9 @@ bb_find_variable_exact <- function(con, name) {
 #' includes (`system.file("extdata", "cxgn_statistics.obo", package =
 #' "breedtools")`), so the terms can be listed and checked without a server.
 #' With a connection, the terms of that Breedbase are listed and compared
-#' with the ontology file.
+#' with the ontology file. When Breedbase adds statistics, the bundled copy
+#' is refreshed with the script `data-raw/update_statistics_ontology.R` of
+#' the package source.
 #'
 #' @param con Optional connection from [breedbase_login()]. Without it, the
 #'   terms of the ontology file are listed.
@@ -762,10 +764,22 @@ second_stage_values <- function(fits, trait = NULL) {
 #' form is written, with the value of every form field printed: upload it in
 #' the browser and Breedbase creates the same analysis project.
 #'
+#' @section The stored trait names:
+#' Breedbase stores the values of an analysis under the trait composed with
+#' the statistic, "trait|statistic|COMP:id", e.g. "fresh root yield|Adjusted
+#' Means from Spatial Correction using SpATS R|COMP:0000379", never under the
+#' plain trait. Before saving (and in a dry run) each trait is listed with
+#' the composed name it will get, and whether that composed trait already
+#' exists or Breedbase will create it. To use another statistic, list them
+#' with [breedbase_statistics()] and give one with `statistic`; run with
+#' `dry_run = TRUE` to see the names again.
+#'
 #' @return Invisibly, a tibble with the analysis name and id, the number of
 #'   rows (accessions or plots) sent and read back, and the analysis page; or,
 #'   when the web pages are closed, a list with the upload `file` and the
-#'   `form` values.
+#'   `form` values. A dry run returns the `file`, the `form` and `traits`:
+#'   each trait with the composed name it will be stored under
+#'   (`stored_as`) and `status` (`"exists"` or `"new"`).
 #'
 #' @examples
 #' prep <- augmented_prep_design(paste0("E", 1:60), locations = c("North", "South"), seed = 1)
@@ -940,6 +954,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
     onto <- bb_choose_statistic(NULL, statistic, kind = estimate, offline = TRUE)
     statistic_full <- paste0(onto$name, "|", onto$accession)
     cat("  [OK]   statistic '", statistic_full, "' (checked in the Breedbase statistics ontology)\n", sep = "")
+    bb_show_composed(con, traits, full, onto, web = FALSE)
     if (!is.null(folder)) cat("  [NOTE] after uploading, move the analysis to folder '", folder, "' on the website\n", sep = "")
     return(invisible(bb_analysis_upload_file(
       build_file(as.list(full)), analysis_name = analysis_name, description = description, protocol = protocol,
@@ -950,6 +965,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   stat <- bb_choose_statistic(con, statistic, kind = estimate)
   statistic_full <- paste0(stat$name, "|", stat$accession)
   cat("  [OK]   statistic '", statistic_full, "' (from this Breedbase)\n", sep = "")
+  stored_as <- bb_show_composed(con, traits, full, stat, web = TRUE)
   cat("  [OK]   analysis of ", what, ": ", length(stocks), " rows, ", length(traits), " trait",
       if (length(traits) > 1) "s" else "", "\n", sep = "")
 
@@ -960,7 +976,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
                   prog$program, if (is.null(folder)) "" else paste0(", folder '", folder, "',"), con$url)
   if (isTRUE(dry_run)) {
     cat("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
-    return(invisible(list(file = file, form = form)))
+    return(invisible(list(file = file, form = form, traits = stored_as)))
   }
   if (isTRUE(confirm)) {
     answer <- readline(sprintf("Save %s? Type 'yes' to continue: ", plan))
@@ -1053,10 +1069,15 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
 #'   traits such as `"dry matter content percentage|Adjusted Means from
 #'   Spatial Correction using SpATS R"` (see [breedbase_adjusted_trait()]).
 #' @param plot,accession Names of the plot-name and accession columns.
-#' @param statistic Optional statistic (see [breedbase_statistics()]): the
-#'   values are then stored under "trait|statistic" (a composed trait, created
-#'   if needed), e.g. the single-stage means next to the two-stage means in
-#'   the same analysis.
+#' @param statistic Optional statistic (see [breedbase_statistics()]). Values
+#'   are always stored under "trait|statistic" (a composed trait, created if
+#'   needed), never under the plain trait, as Breedbase does for analyses.
+#'   By default the statistic the analysis already uses (from its stored
+#'   traits); give another to keep, e.g., single-stage means next to
+#'   two-stage means in the same analysis.
+#' @param estimate When the analysis has no statistic yet: `"blue"`,
+#'   `"blup"` or `"spatial"`, as in [save_breedbase_analysis()] (by default
+#'   from the data).
 #' @param overwrite Logical. Replace values already stored.
 #' @param dry_run Logical. Only verify (Breedbase checks the file), store
 #'   nothing.
@@ -1076,7 +1097,8 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
 #' @export
 add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("plot", "accession"), traits = NULL,
                                           plot = "plot_name", accession = "accession", statistic = NULL,
-                                          overwrite = FALSE, dry_run = FALSE, confirm = interactive()) {
+                                          estimate = NULL, overwrite = FALSE, dry_run = FALSE,
+                                          confirm = interactive()) {
   level <- match.arg(level)
   if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
   if (missing(analysis_name) || length(analysis_name) != 1 || !nzchar(analysis_name)) {
@@ -1108,19 +1130,43 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
   }
   if (is.na(id)) stop("Analysis '", analysis_name, "' was not found among your analyses.", call. = FALSE)
   cat("  [OK]   analysis '", analysis_name, "' (", con$url, "/analyses/", id, ")\n", sep = "")
-  # With a statistic, each trait is stored as "trait|statistic" (a composed
-  # trait, created if needed), so several analyses of the same trait can sit
-  # in one analysis project without replacing each other.
-  if (!is.null(statistic)) {
-    adj <- breedbase_adjusted_trait(con, traits, statistic = statistic, create = !isTRUE(dry_run))
+  # Analysis values are never stored under a plain trait: each trait is
+  # stored as "trait|statistic|COMP:id" (a composed trait, created if needed),
+  # as Breedbase does when it saves an analysis. By default the statistic is
+  # the one the analysis already uses, so the project stays consistent;
+  # otherwise it is chosen as in save_breedbase_analysis().
+  if (is.null(statistic)) {
+    statistic <- bb_analysis_statistic(con, id)
+    if (!is.null(statistic)) {
+      cat("  [OK]   statistic '", statistic, "' (the one of this analysis)\n", sep = "")
+    } else {
+      estimate <- estimate %||% attr(data, "estimate") %||%
+        if (level == "plot" && !identical(attr(data, "method"), "mixed")) "spatial" else "blue"
+      estimate <- match.arg(estimate, c("blue", "blup", "spatial"))
+      stat <- bb_choose_statistic(con, NULL, kind = estimate)
+      statistic <- paste0(stat$name, "|", stat$accession)
+      cat("  [OK]   statistic '", statistic, "'\n", sep = "")
+    }
+  }
+  plain <- traits[!grepl("\\|COMP:[0-9]+$", traits)]        # composed traits given are kept
+  if (length(plain)) {
+    adj <- breedbase_adjusted_trait(con, plain, statistic = statistic, create = !isTRUE(dry_run))
     if (any(adj$status == "missing")) {
-      stop("The trait(s) ", paste0("'", adj$adjusted_trait[adj$status == "missing"], "'", collapse = ", "),
-           " do not exist yet; they are created when storing (dry_run = FALSE).", call. = FALSE)
+      new <- adj$adjusted_trait[adj$status == "missing"]
+      if (!isTRUE(dry_run)) {
+        stop("Could not create the trait(s) ", paste0("'", new, "'", collapse = ", "), ".", call. = FALSE)
+      }
+      # A dry run creates nothing, so Breedbase cannot verify values of a
+      # trait that does not exist yet.
+      for (n in new) cat("  [NEW]  trait '", n, "' will be created when storing\n", sep = "")
+      cat("Dry run: values of new traits are verified by Breedbase when storing. Nothing was stored.\n")
+      return(invisible(list(analysis_name = analysis_name, plots = length(stocks), values = NA_integer_,
+                            new_traits = new)))
     }
     composed <- vapply(adj$adjusted_trait, function(n) bb_find_variable_full(con, n), character(1))
-    for (i in seq_along(traits)) cat("  [OK]   ", traits[i], " -> '", composed[i], "' (", adj$status[i], ")\n", sep = "")
-    names(data)[match(traits, names(data))] <- unname(composed)
-    traits <- unname(composed)
+    for (i in seq_along(plain)) cat("  [OK]   ", plain[i], " -> '", composed[i], "' (", adj$status[i], ")\n", sep = "")
+    names(data)[match(plain, names(data))] <- unname(composed)
+    traits[match(plain, traits)] <- unname(composed)
   }
   # Trait names as Breedbase knows them (composed traits by their exact name).
   full <- vapply(traits, function(t) {
@@ -1394,17 +1440,7 @@ breedbase_analysis_plots <- function(con, analysis_name) {
     id <- bb_find_analysis(con, analysis_name)
   }
   if (is.na(id)) stop("Analysis '", analysis_name, "' was not found among your analyses.", call. = FALSE)
-  # The traits of the analysis, with their ids, as the trial page lists them
-  # ([trait id, trait name, ...] per trait); the analysis summary is the
-  # fallback (its trait list depends on the Breedbase version).
-  assayed <- bb_ajax_get(con, paste0("ajax/breeders/trial/", id, "/traits_assayed"),
-                         what = "list the traits of the analysis")$traits_assayed
-  while (length(assayed) == 1 && is.list(assayed[[1]]) && length(assayed[[1]]) && is.list(assayed[[1]][[1]])) {
-    assayed <- assayed[[1]]                          # Breedbase wraps the list once more
-  }
-  trait_ids <- stats::setNames(
-    vapply(assayed, function(x) as.character(unlist(x[1])), character(1)),
-    vapply(assayed, function(x) as.character(unlist(x[2])), character(1)))
+  trait_ids <- bb_analysis_traits(con, id)
   if (!length(trait_ids)) {
     info <- bb_ajax_get(con, paste0("ajax/analysis/", id, "/retrieve"), what = "read the analysis")
     for (t in unique(as.character(unlist(info$traits)))) {
@@ -1461,4 +1497,63 @@ breedbase_analysis_plots <- function(con, analysis_name) {
   out <- out[order(out$plot_number, out$analysis_plot_name), , drop = FALSE]
   attr(out, "analysis_db_id") <- id
   out
+}
+
+# Traits stored in an analysis, as the trial page lists them ([trait id,
+# trait name, ...] per trait): ids named by full trait name.
+bb_analysis_traits <- function(con, id) {
+  assayed <- bb_ajax_get(con, paste0("ajax/breeders/trial/", id, "/traits_assayed"),
+                         what = "list the traits of the analysis")$traits_assayed
+  while (length(assayed) == 1 && is.list(assayed[[1]]) && length(assayed[[1]]) && is.list(assayed[[1]][[1]])) {
+    assayed <- assayed[[1]]                          # Breedbase wraps the list once more
+  }
+  stats::setNames(
+    vapply(assayed, function(x) as.character(unlist(x[1])), character(1)),
+    vapply(assayed, function(x) as.character(unlist(x[2])), character(1)))
+}
+
+# The statistic of an analysis, from its composed traits
+# ("trait|statistic|COMP:id"); NULL when it has none.
+bb_analysis_statistic <- function(con, id) {
+  traits <- names(bb_analysis_traits(con, id))
+  composed <- grep("\\|COMP:[0-9]+$", traits, value = TRUE)
+  stats_found <- unique(sub("^[^|]*\\|", "", sub("\\|COMP:[0-9]+$", "", composed)))
+  stats_found <- stats_found[nzchar(stats_found)]
+  ok <- vapply(stats_found, function(st) {
+    !inherits(try(bb_check_statistic_ontology(st), silent = TRUE), "try-error")
+  }, logical(1))
+  stats_found <- stats_found[ok]
+  if (!length(stats_found)) return(NULL)
+  if (length(stats_found) > 1) {
+    cat("  [NOTE] the analysis has traits with ", length(stats_found), " statistics; using '", stats_found[1],
+        "' (choose another with `statistic = ...`)\n", sep = "")
+  }
+  stats_found[1]
+}
+
+# Show (and return) the composed name each trait will be stored under in an
+# analysis: "trait|statistic|COMP:id" when it exists, "trait|statistic" when
+# Breedbase will create it. `full` are the traits' full names, `stat` the
+# statistic (name, accession, and the server id when the web pages are open).
+bb_show_composed <- function(con, traits, full, stat, web = TRUE) {
+  base <- sub("\\|[^|]*$", "", unname(full[traits]))
+  composed <- paste(base, stat$name, sep = "|")
+  ids <- if (web) unname(bb_find_variables(con, traits)) else rep(NA_character_, length(traits))
+  stored <- vapply(seq_along(traits), function(i) {
+    hit <- if (web && !is.na(ids[i]) && !is.na(stat$id %||% NA)) {
+      cid <- bb_composed_trait_id(con, c(ids[i], stat$id))
+      if (is.na(cid)) NA_character_ else bb_find_variable_full(con, composed[i])
+    } else {
+      bb_find_variable_full(con, composed[i])
+    }
+    if (is.na(hit)) NA_character_ else hit
+  }, character(1))
+  status <- ifelse(is.na(stored), "new", "exists")
+  stored[is.na(stored)] <- composed[is.na(stored)]
+  for (i in seq_along(traits)) {
+    cat("  [OK]   '", traits[i], "' will be stored as '", stored[i], "'",
+        if (status[i] == "new") " (new composed trait: Breedbase creates it)" else "", "\n", sep = "")
+  }
+  cat("         Another statistic? See breedbase_statistics(con) and give statistic = \"...\"\n")
+  tibble::tibble(trait = traits, stored_as = stored, status = status)
 }

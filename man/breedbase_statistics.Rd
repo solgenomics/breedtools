@@ -25,7 +25,9 @@ Spatial Correction using SpATS R". Breedbase loads these terms from the
 file \code{ontology/cxgn_statistics.obo} of its source code, which breedtools
 includes (\code{system.file("extdata", "cxgn_statistics.obo", package = "breedtools")}), so the terms can be listed and checked without a server.
 With a connection, the terms of that Breedbase are listed and compared
-with the ontology file.
+with the ontology file. When Breedbase adds statistics, the bundled copy
+is refreshed with the script \code{data-raw/update_statistics_ontology.R} of
+the package source.
 }
 \examples{
 \dontrun{

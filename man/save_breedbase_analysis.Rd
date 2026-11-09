@@ -88,7 +88,9 @@ as it is; a new one (special characters replaced with \code{"_"}) is created whe
 Invisibly, a tibble with the analysis name and id, the number of
 rows (accessions or plots) sent and read back, and the analysis page; or,
 when the web pages are closed, a list with the upload \code{file} and the
-\code{form} values.
+\code{form} values. A dry run returns the \code{file}, the \code{form} and \code{traits}:
+each trait with the composed name it will be stored under
+(\code{stored_as}) and \code{status} (\code{"exists"} or \code{"new"}).
 }
 \description{
 Saves analysis results as a Breedbase analysis (a project of type
@@ -127,6 +129,18 @@ their web pages with an extra web password. With it (see
 everything is checked through BrAPI and the file of the "Upload analysis"
 form is written, with the value of every form field printed: upload it in
 the browser and Breedbase creates the same analysis project.
+}
+
+\section{The stored trait names}{
+
+Breedbase stores the values of an analysis under the trait composed with
+the statistic, "trait|statistic|COMP:id", e.g. "fresh root yield|Adjusted
+Means from Spatial Correction using SpATS R|COMP:0000379", never under the
+plain trait. Before saving (and in a dry run) each trait is listed with
+the composed name it will get, and whether that composed trait already
+exists or Breedbase will create it. To use another statistic, list them
+with \code{\link[=breedbase_statistics]{breedbase_statistics()}} and give one with \code{statistic}; run with
+\code{dry_run = TRUE} to see the names again.
 }
 
 \examples{

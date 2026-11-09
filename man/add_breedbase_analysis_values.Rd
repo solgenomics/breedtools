@@ -13,6 +13,7 @@ add_breedbase_analysis_values(
   plot = "plot_name",
   accession = "accession",
   statistic = NULL,
+  estimate = NULL,
   overwrite = FALSE,
   dry_run = FALSE,
   confirm = interactive()
@@ -36,10 +37,16 @@ traits such as \code{"dry matter content percentage|Adjusted Means from Spatial 
 
 \item{plot, accession}{Names of the plot-name and accession columns.}
 
-\item{statistic}{Optional statistic (see \code{\link[=breedbase_statistics]{breedbase_statistics()}}): the
-values are then stored under "trait|statistic" (a composed trait, created
-if needed), e.g. the single-stage means next to the two-stage means in
-the same analysis.}
+\item{statistic}{Optional statistic (see \code{\link[=breedbase_statistics]{breedbase_statistics()}}). Values
+are always stored under "trait|statistic" (a composed trait, created if
+needed), never under the plain trait, as Breedbase does for analyses.
+By default the statistic the analysis already uses (from its stored
+traits); give another to keep, e.g., single-stage means next to
+two-stage means in the same analysis.}
+
+\item{estimate}{When the analysis has no statistic yet: \code{"blue"},
+\code{"blup"} or \code{"spatial"}, as in \code{\link[=save_breedbase_analysis]{save_breedbase_analysis()}} (by default
+from the data).}
 
 \item{overwrite}{Logical. Replace values already stored.}
 

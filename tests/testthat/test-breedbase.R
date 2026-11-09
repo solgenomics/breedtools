@@ -156,8 +156,28 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         valid <- if (plots_level) vapply(state$plots, `[[`, "", "observationUnitName") else accessions
         bad_stocks <- setdiff(f$stock_names, valid)
         if (length(bad_stocks)) return(httr2::response_json(200, body = list(error_messages = list(paste("The following stocks are not in the database:", paste(bad_stocks, collapse = ","))))))
+        # Like Breedbase: each trait is stored composed with the statistic of
+        # the analysis, "trait|statistic|COMP:id" (created when new).
+        stat <- form$upload_new_analysis_statistical_ontology_term
+        stat_name <- sub("\\|[^|]*$", "", stat)
+        stat_id <- Filter(function(x) identical(x$accession, sub("^.*\\|", "", stat)), state$statistics)
+        stored <- f
+        for (j in seq_along(names(f))[-1]) {
+          t <- names(f)[j]
+          if (grepl("\\|COMP:[0-9]+$", t)) next
+          cname <- paste(sub("\\|[^|]*$", "", t), stat_name, sep = "|")
+          hit <- Filter(function(cp) identical(cp$name, cname), state$composed)
+          if (!length(hit)) {
+            vid <- Filter(function(v) identical(v$observationVariableName, t), state$variables)[[1]]$observationVariableDbId
+            cid <- as.character(state$next_id <- state$next_id + 1)
+            state$composed[[length(state$composed) + 1]] <- list(
+              id = cid, name = cname, components = c(vid, if (length(stat_id)) as.character(stat_id[[1]]$cvterm_id)))
+            hit <- list(state$composed[[length(state$composed)]])
+          }
+          names(stored)[j] <- paste0(cname, "|COMP:000", hit[[1]]$id)
+        }
         id <- as.character(state$next_id <- state$next_id + 1)
-        state$analyses[[length(state$analyses) + 1]] <- list(id = id, name = nm, form = form, file = f,
+        state$analyses[[length(state$analyses) + 1]] <- list(id = id, name = nm, form = form, file = f, stored = stored,
                                                              values = stats::setNames(as.list(f$stock_names), f$stock_names))
         return(httr2::response_json(200, body = list(success = 1, analysis_id = as.integer(id), model_id = 5)))
       }
@@ -184,7 +204,7 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         rows <- c(list(list("header")), lapply(names(a$values), function(n) list(n)))
         # Traits: those of the upload file and those added later.
         added <- unique(sub("^[^ ]+ ", "", grep(paste0("^", a$name, "_"), names(state$analysis_values), value = TRUE)))
-        traits <- unique(c(if (!is.null(a$file)) names(a$file)[-1], added))
+        traits <- unique(c(if (!is.null(a$stored)) names(a$stored)[-1], added))
         # Like cassava-test: the summary's trait list can be empty.
         return(httr2::response_json(200, body = list(analysis_name = a$name, data = rows, traits = list())))
       }
@@ -193,7 +213,7 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         id <- sub("^ajax/breeders/trial/([0-9]+)/traits_assayed$", "\\1", path)
         a <- Filter(function(a) a$id == id, state$analyses)[[1]]
         added <- unique(sub("^[^ ]+ ", "", grep(paste0("^", a$name, "_"), names(state$analysis_values), value = TRUE)))
-        traits <- unique(c(if (!is.null(a$file)) names(a$file)[-1], added))
+        traits <- unique(c(if (!is.null(a$stored)) names(a$stored)[-1], added))
         all_vars <- c(lapply(state$variables, function(v) list(id = v$observationVariableDbId, name = v$observationVariableName)),
                       lapply(state$composed, function(cp) list(id = cp$id, name = paste0(cp$name, "|COMP:000", cp$id))))
         rows <- lapply(traits, function(t) {
@@ -215,9 +235,9 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         header <- list("studyName", "germplasmName", "observationUnitName", "replicate", "blockNumber", "plotNumber",
                        "rowNumber", "colNumber", tname)
         rows <- list(header)
-        for (stock in a$file$stock_names) {
+        for (stock in a$stored$stock_names) {
           unit <- paste0(a$name, "_", stock)
-          v <- if (tname %in% names(a$file)) a$file[[tname]][a$file$stock_names == stock] else ""
+          v <- if (tname %in% names(a$stored)) a$stored[[tname]][a$stored$stock_names == stock] else ""
           v2 <- state$analysis_values[[paste(unit, tname)]]
           if (!is.null(v2)) v <- v2
           if (!nzchar(v)) next
@@ -1397,23 +1417,55 @@ test_that("values are added to an existing analysis (a second trait), without du
     expect_equal(preview$analysis_plot_name, paste0("S1_", stage1$plot_name))
     expect_equal(preview$accession, stage1$accession)
     expect_equal(analysis_plot_names(stage1, "S 1")$analysis_plot_name[1], paste0("S_1_", stage1$plot_name[1]))
+    # Before saving: the composed trait each trait will be stored under.
+    out <- capture.output(dr <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+                                                        description = "x", level = "plot", dry_run = TRUE))
+    expect_equal(dr$traits$status, "new")
+    expect_match(dr$traits$stored_as, "^fresh root yield\\|[^|]+$")
+    expect_true(any(grepl("'fresh root yield' will be stored as 'fresh root yield|", out, fixed = TRUE)))
+    expect_true(any(grepl("breedbase_statistics(con)", out, fixed = TRUE)))
+    # Another statistic, chosen from the list: another stored name.
+    blup <- "Adjusted means from BLUPs using LMER R"
+    expect_true(blup %in% breedbase_statistics(con)$statistic)
+    out <- capture.output(dr2 <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+                                                         description = "x", level = "plot", dry_run = TRUE,
+                                                         statistic = blup))
+    expect_equal(dr2$traits$stored_as, paste0("fresh root yield|", blup))
+    expect_error(capture.output(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+                                                        description = "x", level = "plot", dry_run = TRUE,
+                                                        statistic = "My own statistic")))
     capture.output(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA", description = "x",
                                            level = "plot", confirm = FALSE))
+    # The composed trait now exists: a dry run shows it with its COMP id.
+    out <- capture.output(dr3 <- save_breedbase_analysis(stage1, con, analysis_name = "S1_again", program = "IITA",
+                                                         description = "x", level = "plot", dry_run = TRUE))
+    expect_equal(dr3$traits$status, "exists")
+    expect_match(dr3$traits$stored_as, paste0("^", dr$traits$stored_as, "\\|COMP:[0-9]+$"))
     # Read back: the same plots and accessions, one trait so far.
     saved <- breedbase_analysis_plots(con, "S1")
     expect_equal(nrow(saved), 144)
     expect_setequal(saved$analysis_plot_name, preview$analysis_plot_name)
     expect_equal(saved$accession, preview$accession[match(saved$analysis_plot_name, preview$analysis_plot_name)])
     expect_equal(saved$plot_number, 1:144)
-    expect_equal(saved[["fresh root yield|CO_334:0000013"]],
-                 stage1[["fresh root yield"]][match(saved$plot_name, stage1$plot_name)], tolerance = 1e-6)
+    # Breedbase stores the analysis values composed with its statistic.
+    ytrait <- grep("^fresh root yield\\|[^|]+\\|COMP:[0-9]+$", names(saved), value = TRUE)
+    expect_length(ytrait, 1)
+    stat <- sub("^fresh root yield\\|([^|]+)\\|COMP:[0-9]+$", "\\1", ytrait)
+    expect_false("fresh root yield|CO_334:0000013" %in% names(saved))
+    expect_equal(saved[[ytrait]], stage1[["fresh root yield"]][match(saved$plot_name, stage1$plot_name)],
+                 tolerance = 1e-6)
     expect_error(breedbase_analysis_plots(con, "NOPE"), "was not found")
     out <- capture.output(res <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
                                                                confirm = FALSE))
     expect_equal(res$plots, 144)
+    # The second trait too: same statistic as the analysis, never the plain trait.
+    expect_true(any(grepl(paste0("statistic '", stat, "' (the one of this analysis)"), out, fixed = TRUE)))
+    expect_false(any(grepl("CO_334:0000092", names(fake$state$analysis_values))))
     both <- breedbase_analysis_plots(con, "S1")
-    expect_true("dry matter content percentage|CO_334:0000092" %in% names(both))
-    expect_false(anyNA(both[["dry matter content percentage|CO_334:0000092"]]))
+    dtrait <- grep(paste0("^dry matter content percentage\\|", stat, "\\|COMP:[0-9]+$"), names(both), value = TRUE)
+    expect_length(dtrait, 1)
+    expect_false("dry matter content percentage|CO_334:0000092" %in% names(both))
+    expect_false(anyNA(both[[dtrait]]))
     expect_length(fake$state$analysis_values, 144)
     expect_true(all(startsWith(names(fake$state$analysis_values), "S1_AYT_2026_")))
     # The same values again: Breedbase reports them; nothing is replaced without overwrite.
