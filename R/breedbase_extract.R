@@ -19,7 +19,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
 #' pheno <- breedbase_phenotypes(con, trials = c("FALL_2026_Ibadan", "FALL_2026_Ikenne"),
 #'                               traits = c("fresh root yield", "dry matter content percentage"))
 #' plot_trait(pheno, "fresh root yield", by = "trial_name")

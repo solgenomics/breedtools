@@ -75,7 +75,7 @@ Values already present for a plot and trait are not replaced unless
 }
 \examples{
 \dontrun{
-con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
 # dm1: first-stage values of dry matter, one row per field plot
 add_breedbase_analysis_values(dm1, con, analysis_name = "FALL_2026_stage1", level = "plot")
 }

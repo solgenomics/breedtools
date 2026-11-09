@@ -1089,7 +1089,7 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
 #' # dm1: first-stage values of dry matter, one row per field plot
 #' add_breedbase_analysis_values(dm1, con, analysis_name = "FALL_2026_stage1", level = "plot")
 #' }
@@ -1421,7 +1421,7 @@ analysis_plot_names <- function(data, analysis_name, level = c("plot", "accessio
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
 #' plots <- breedbase_analysis_plots(con, "AYT_2026_stage1")
 #' head(plots)
 #' }
