@@ -52,7 +52,8 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
     auth <- httr2::req_get_headers(req, redacted = "reveal")$Authorization
     state$requests[[length(state$requests) + 1]] <- list(method = method, path = path, body = body, auth = auth)
     if (path == "token") {
-      if (identical(body$password, password)) {
+      # The login is a form: its values are marked AsIs.
+      if (identical(as.character(unclass(body$password)), password)) {
         return(httr2::response_json(200, body = list(access_token = "TOKEN123", userDisplayName = "Jane Doe")))
       }
       return(httr2::response_json(200, body = list(access_token = NULL,
@@ -181,7 +182,56 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         id <- sub("^ajax/analysis/([0-9]+)/retrieve$", "\\1", path)
         a <- Filter(function(a) a$id == id, state$analyses)[[1]]
         rows <- c(list(list("header")), lapply(names(a$values), function(n) list(n)))
-        return(httr2::response_json(200, body = list(analysis_name = a$name, data = rows)))
+        # Traits: those of the upload file and those added later.
+        added <- unique(sub("^[^ ]+ ", "", grep(paste0("^", a$name, "_"), names(state$analysis_values), value = TRUE)))
+        traits <- unique(c(if (!is.null(a$file)) names(a$file)[-1], added))
+        # Like cassava-test: the summary's trait list can be empty.
+        return(httr2::response_json(200, body = list(analysis_name = a$name, data = rows, traits = list())))
+      }
+      if (grepl("^ajax/breeders/trial/[0-9]+/traits_assayed$", path)) {
+        # Like Breedbase: [[ [trait id, "name|ONTO:id", components, count], ... ]] (wrapped once more).
+        id <- sub("^ajax/breeders/trial/([0-9]+)/traits_assayed$", "\\1", path)
+        a <- Filter(function(a) a$id == id, state$analyses)[[1]]
+        added <- unique(sub("^[^ ]+ ", "", grep(paste0("^", a$name, "_"), names(state$analysis_values), value = TRUE)))
+        traits <- unique(c(if (!is.null(a$file)) names(a$file)[-1], added))
+        all_vars <- c(lapply(state$variables, function(v) list(id = v$observationVariableDbId, name = v$observationVariableName)),
+                      lapply(state$composed, function(cp) list(id = cp$id, name = paste0(cp$name, "|COMP:000", cp$id))))
+        rows <- lapply(traits, function(t) {
+          v <- Filter(function(v) identical(v$name, t), all_vars)[[1]]
+          list(as.integer(v$id), v$name, NULL, 10L)
+        })
+        return(httr2::response_json(200, body = list(traits_assayed = list(rows))))
+      }
+      if (grepl("^ajax/breeders/trial/[0-9]+/trait_phenotypes$", path)) {
+        # Like Breedbase: the phenotype matrix of one trait (only the units
+        # with a value), with display = analysis_instance for analyses.
+        id <- sub("^ajax/breeders/trial/([0-9]+)/trait_phenotypes$", "\\1", path)
+        a <- Filter(function(a) a$id == id, state$analyses)[[1]]
+        q <- url$query
+        if (!identical(q$display, "analysis_instance")) return(httr2::response_json(200, body = list(data = list())))
+        all_vars <- c(lapply(state$variables, function(v) list(id = v$observationVariableDbId, name = v$observationVariableName)),
+                      lapply(state$composed, function(cp) list(id = cp$id, name = paste0(cp$name, "|COMP:000", cp$id))))
+        tname <- Filter(function(v) identical(as.character(v$id), as.character(q$trait)), all_vars)[[1]]$name
+        header <- list("studyName", "germplasmName", "observationUnitName", "replicate", "blockNumber", "plotNumber",
+                       "rowNumber", "colNumber", tname)
+        rows <- list(header)
+        for (stock in a$file$stock_names) {
+          unit <- paste0(a$name, "_", stock)
+          v <- if (tname %in% names(a$file)) a$file[[tname]][a$file$stock_names == stock] else ""
+          v2 <- state$analysis_values[[paste(unit, tname)]]
+          if (!is.null(v2)) v <- v2
+          if (!nzchar(v)) next
+          fp <- Filter(function(u) u$observationUnitName == stock, state$plots)
+          pos <- if (length(fp)) fp[[1]]$observationUnitPosition else NULL
+          lvl <- function(n) {
+            r <- Filter(function(x) x$levelName == n, pos$observationLevelRelationships %||% list())
+            if (length(r)) r[[1]]$levelCode else NULL
+          }
+          rows[[length(rows) + 1]] <- list(a$name, if (length(fp)) fp[[1]]$germplasmName else stock, unit, lvl("rep"),
+                                           lvl("block"), pos$observationLevel$levelCode, pos$positionCoordinateY,
+                                           pos$positionCoordinateX, v)
+        }
+        return(httr2::response_json(200, body = list(status = "success", data = rows)))
       }
       return(httr2::response_json(404, body = list(error = "unknown ajax call")))
     }
@@ -296,7 +346,22 @@ fake_breedbase <- function(accessions = c(paste0("G", 1:200), paste0("C", 1:6), 
         if (!identical(accessions[as.integer(id) - 5000], u$germplasmName)) return(err(404, "germplasm not found"))
         state$next_id <- state$next_id + 1
         u$observationUnitDbId <- as.character(state$next_id)
+        u$observationUnitPosition$geoCoordinates <- NULL   # like Breedbase: POST does not store the GPS
         state$plots[[length(state$plots) + 1]] <- u
+      }
+      return(ok(list()))
+    }
+    if (path == "observationunits" && method == "PUT") {
+      # Like Breedbase: a map of observationUnitDbId to the unit; the level
+      # must be plot; the GPS replaces the stored one.
+      for (id in names(body)) {
+        u <- body[[id]]
+        if (!identical(u$observationUnitPosition$observationLevel$levelName, "plot")) {
+          return(err(400, "Only 'plot', 'plant' or 'tissue_sample' allowed for observation level"))
+        }
+        k <- which(vapply(state$plots, `[[`, "", "observationUnitDbId") == id)
+        if (!length(k)) return(err(404, "observation unit not found"))
+        state$plots[[k]]$observationUnitPosition$geoCoordinates <- u$observationUnitPosition$geoCoordinates
       }
       return(ok(list()))
     }
@@ -347,7 +412,7 @@ test_that("converted field books save as a new trial and round-trip through Bree
     expect_equal(saved$plots_found, 4)
     expect_identical(fake$state$studies[[1]]$trialDbId, "10")
     readback <- breedbase_trial_plots(con, "AG_2026")
-    expected <- phenotype_template(converted, "AG_2026")
+    expected <- phenotype_template(converted, "AG_2026", location = "Ibadan")
     expected$trial_name <- NULL
     expect_equal(readback[names(expected)], expected)
     expect_error(capture.output(save_breedbase(converted, con, program = "IITA",
@@ -402,7 +467,7 @@ test_that("dry run without a connection returns the BrAPI records", {
   p1 <- plots[[1]]
   first <- rc$design[rc$design$plots == 1, ]
   expect_equal(p1$observationUnitName,
-               paste("AYT_2026", first$all_entries, first$block, first$rep, sep = "_"))
+               paste("AYT_2026", "Ibadan", first$all_entries, first$block, first$rep, sep = "_"))
   names_all <- vapply(plots, `[[`, "", "observationUnitName")
   expect_false(anyDuplicated(names_all) > 0)
   expect_equal(p1$observationUnitPosition$observationLevel$levelName, "plot")
@@ -591,14 +656,23 @@ test_that("breedbase_check reports every problem at once, with suggestions", {
     expect_match(acc$suggestion[acc$name == "X9"], "add it to Breedbase first")
     expect_equal(acc$status[acc$name == "G1"], c("REPEATED", "OK"))
     expect_true(any(grepl("100 of 102 accessions are in Breedbase", out)))
-    expect_true(any(grepl("needs? fixing", out)))
+    expect_false(any(res$what == "plot"))                    # accession names are not plot names
+    expect_true(any(grepl("^NOT READY: fix 4 problems \\(1 location, 3 accessions, marked", out)))
+    expect_true(any(grepl("^Checked: 1 program, 1 new folder, 1 location, 102 accessions, 1 trial name\\.", out)))
 
     # A design can be given directly; all good -> ok.
     rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4,
                                       n_candidates = 5, seed = 1)
     out <- capture.output(res <- breedbase_check(con, rc, location = "Ibadan"))
     expect_true(attr(res, "ok"))
-    expect_true(any(grepl("All names are ready", out)))
+    expect_true(any(grepl("plot names NOT checked", out)))    # no trial name: plot names unknown
+    named <- add_plot_names(rc, "T1", location = "Ibadan")
+    out <- capture.output(res <- breedbase_check(con, named, location = "Ibadan", trial_name = "T1"))
+    expect_true(any(grepl("^READY: everything checked can be saved .*1 trial name, 144 plot names\\)", out)))
+    out <- capture.output(res <- breedbase_check(con, c(paste0("G", 1:108), paste0("C", 1:4)), location = "Ibadan",
+                                                 plot_names = c("P1", "P2", "P1")))
+    expect_equal(res$status[res$what == "plot" & res$name == "P1"], c("REPEATED", "OK"))
+    expect_true(any(grepl("^NOT READY: fix 1 problem \\(1 plot name", out)))
     # No write calls were made by the checks.
     posts <- Filter(function(r) r$method == "POST" && !grepl("^search|token", r$path), fake$state$requests)
     expect_length(posts, 0)
@@ -778,7 +852,7 @@ test_that("the folder is optional: the trial goes directly in the program", {
 
 test_that("phenotype_template gives the plot names that save_breedbase uses", {
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
-  sheet <- phenotype_template(rc, "AYT_2026", traits = c("fresh root yield", "dry matter content percentage"))
+  sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = c("fresh root yield", "dry matter content percentage"))
   sent <- save_breedbase(rc, trial_name = "AYT_2026", year = 2026, location = "Ibadan", dry_run = TRUE,
                          description = "x")
   expect_setequal(sheet$plot_name, vapply(sent$plots[[1]], `[[`, "", "observationUnitName"))
@@ -795,7 +869,7 @@ test_that("phenotype_template gives the plot names that save_breedbase uses", {
 test_that("phenotypes: dry run, wide and long data, checks and upload", {
   skip_if_not_installed("httr2")
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
-  sheet <- phenotype_template(rc, "AYT_2026", traits = c("fresh root yield", "dry matter content percentage|CO_334:0000092"))
+  sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = c("fresh root yield", "dry matter content percentage|CO_334:0000092"))
   set.seed(2)
   sheet$`fresh root yield` <- round(rnorm(144, 25, 4), 1)
   sheet$`dry matter content percentage|CO_334:0000092` <- round(rnorm(144, 32, 3), 1)
@@ -902,9 +976,9 @@ test_that("first-stage plot values: one per field plot, design effects removed",
   fit <- analyze_augmented_row_column_design(d, "yield")
   v <- first_stage_values(list("fresh root yield" = fit,
                                "dry matter content percentage" = analyze_augmented_row_column_design(d, "dm")),
-                          rc, "AYT_2026")
+                          rc, "AYT_2026", location = "Ibadan")
   expect_equal(nrow(v), 144)
-  expect_setequal(v$plot_name, phenotype_template(rc, "AYT_2026")$plot_name)
+  expect_setequal(v$plot_name, phenotype_template(rc, "AYT_2026", location = "Ibadan")$plot_name)
   # value = adjusted mean of the genotype + residual of the plot
   pr <- fit$plot_results
   am <- setNames(fit$adjusted_means$adjusted_mean, fit$adjusted_means$genotype)
@@ -914,12 +988,12 @@ test_that("first-stage plot values: one per field plot, design effects removed",
   expect_lt(abs(coef(lm(v$`fresh root yield` ~ v$row))[2]), 0.2)
   expect_equal(attr(v, "method"), "mixed")
   if (requireNamespace("SpATS", quietly = TRUE)) {
-    vs <- first_stage_values(analyze_augmented_row_column_design(d, "yield", spatial = TRUE), rc, "AYT_2026",
+    vs <- first_stage_values(analyze_augmented_row_column_design(d, "yield", spatial = TRUE), rc, "AYT_2026", location = "Ibadan",
                              trait = "fresh root yield")
     expect_lt(abs(coef(lm(vs$`fresh root yield` ~ vs$row))[2]), 0.15)   # most of the row trend (0.4) is removed
     expect_equal(attr(vs, "method"), "spatial")
   }
-  expect_error(first_stage_values(fit, rc, "AYT_2026"), "Give the Breedbase `trait`")
+  expect_error(first_stage_values(fit, rc, "AYT_2026", location = "Ibadan"), "Give the Breedbase `trait`")
 
   # p-rep two-stage: stage-1 fits per location, one trial per location
   prep <- augmented_prep_design(paste0("E", 1:60), locations = c("North", "South"), seed = 1)
@@ -943,7 +1017,7 @@ test_that("resolvable row-column analyses give plot residuals", {
   # X'e = 0: residuals sum to zero within each replicate and each treatment
   expect_true(all(abs(tapply(pr$residual, pr$replicate, sum)) < 1e-6))
   expect_true(all(abs(tapply(pr$residual, pr$all_entries, sum)) < 1e-6))
-  v <- first_stage_values(f, r, "RRC_2026", trait = "fresh root yield")
+  v <- first_stage_values(f, r, "RRC_2026", location = "Ibadan", trait = "fresh root yield")
   expect_equal(nrow(v), nrow(dd))
   expect_false(anyNA(v$`fresh root yield`))
 })
@@ -955,7 +1029,7 @@ test_that("first stage saved as a trait of the field plots; second stage as an a
   set.seed(1)
   d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d))
   fit <- analyze_augmented_row_column_design(d, "yield")
-  v <- first_stage_values(fit, rc, "AYT_2026", trait = "fresh root yield")
+  v <- first_stage_values(fit, rc, "AYT_2026", location = "Ibadan", trait = "fresh root yield")
   adjusted <- c("fresh root yield" = "fresh root yield spatially adjusted|COMP:0000123")
 
   # Without a connection the adjusted trait is "trait|statistic".
@@ -1049,7 +1123,7 @@ test_that("first stage: the adjusted trait is found or created (trait + statisti
   d <- rc$design
   set.seed(1)
   d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d))
-  v <- first_stage_values(analyze_augmented_row_column_design(d, "yield"), rc, "AYT_2026", trait = "fresh root yield")
+  v <- first_stage_values(analyze_augmented_row_column_design(d, "yield"), rc, "AYT_2026", location = "Ibadan", trait = "fresh root yield")
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
@@ -1124,7 +1198,7 @@ test_that("an existing adjusted trait is found through BrAPI, without the websit
 test_that("after saving phenotypes the Breedbase phenotype cache is refreshed", {
   skip_if_not_installed("httr2")
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
-  sheet <- phenotype_template(rc, "AYT_2026", traits = "fresh root yield")
+  sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = "fresh root yield")
   sheet$`fresh root yield` <- seq_len(nrow(sheet))
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
@@ -1226,7 +1300,7 @@ test_that("web pages closed by a web password: the analysis upload file is writt
   set.seed(1)
   d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d))
   fit <- analyze_augmented_row_column_design(d, "yield")
-  stage1 <- first_stage_values(fit, rc, "AYT_2026", trait = "fresh root yield")
+  stage1 <- first_stage_values(fit, rc, "AYT_2026", location = "Ibadan", trait = "fresh root yield")
   means <- second_stage_values(fit, trait = "fresh root yield")
   fake <- fake_breedbase(site_auth = c("tester", "webpw"))
   httr2::with_mocked_responses(fake$mock, {
@@ -1295,9 +1369,9 @@ test_that("breedbase_trial_plots reads a saved trial; first_stage_values checks 
     plots <- breedbase_trial_plots(con, "AYT_2026")
     expect_equal(nrow(plots), 144)
     expect_equal(plots$accession, rc$design$all_entries[match(plots$plot_number, rc$design$plots)])
-    v <- first_stage_values(fit, rc, "AYT_2026", trait = "y", breedbase_plots = plots)
+    v <- first_stage_values(fit, rc, "AYT_2026", location = "Ibadan", trait = "y", breedbase_plots = plots)
     expect_setequal(v$plot_name, plots$plot_name)
-    expect_error(first_stage_values(fit, other, "AYT_2026", trait = "y", breedbase_plots = plots),
+    expect_error(first_stage_values(fit, other, "AYT_2026", location = "Ibadan", trait = "y", breedbase_plots = plots),
                  "differ from the trial saved in Breedbase")
     expect_error(breedbase_trial_plots(con, "NOPE"), "was not found")
   })
@@ -1310,19 +1384,36 @@ test_that("values are added to an existing analysis (a second trait), without du
   set.seed(1)
   d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d))
   d$dm <- 32 + rnorm(nrow(d))
-  stage1 <- first_stage_values(analyze_augmented_row_column_design(d, "yield"), rc, "AYT_2026", trait = "fresh root yield")
-  dm1 <- first_stage_values(analyze_augmented_row_column_design(d, "dm"), rc, "AYT_2026",
+  stage1 <- first_stage_values(analyze_augmented_row_column_design(d, "yield"), rc, "AYT_2026", location = "Ibadan", trait = "fresh root yield")
+  dm1 <- first_stage_values(analyze_augmented_row_column_design(d, "dm"), rc, "AYT_2026", location = "Ibadan",
                             trait = "dry matter content percentage|CO_334:0000092")
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
     capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
+    # Before saving: the names the analysis plots will have.
+    preview <- analysis_plot_names(stage1, "S1", level = "plot")
+    expect_equal(preview$analysis_plot_name, paste0("S1_", stage1$plot_name))
+    expect_equal(preview$accession, stage1$accession)
+    expect_equal(analysis_plot_names(stage1, "S 1")$analysis_plot_name[1], paste0("S_1_", stage1$plot_name[1]))
     capture.output(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA", description = "x",
                                            level = "plot", confirm = FALSE))
+    # Read back: the same plots and accessions, one trait so far.
+    saved <- breedbase_analysis_plots(con, "S1")
+    expect_equal(nrow(saved), 144)
+    expect_setequal(saved$analysis_plot_name, preview$analysis_plot_name)
+    expect_equal(saved$accession, preview$accession[match(saved$analysis_plot_name, preview$analysis_plot_name)])
+    expect_equal(saved$plot_number, 1:144)
+    expect_equal(saved[["fresh root yield|CO_334:0000013"]],
+                 stage1[["fresh root yield"]][match(saved$plot_name, stage1$plot_name)], tolerance = 1e-6)
+    expect_error(breedbase_analysis_plots(con, "NOPE"), "was not found")
     out <- capture.output(res <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
                                                                confirm = FALSE))
     expect_equal(res$plots, 144)
+    both <- breedbase_analysis_plots(con, "S1")
+    expect_true("dry matter content percentage|CO_334:0000092" %in% names(both))
+    expect_false(anyNA(both[["dry matter content percentage|CO_334:0000092"]]))
     expect_length(fake$state$analysis_values, 144)
     expect_true(all(startsWith(names(fake$state$analysis_values), "S1_AYT_2026_")))
     # The same values again: Breedbase reports them; nothing is replaced without overwrite.
@@ -1350,7 +1441,8 @@ test_that("from Breedbase to analyses: read trials, outliers, first, second and 
     for (i in 1:2) {
       capture.output(save_breedbase(designs[[i]], con, program = "IITA", trial_name = paste0("T_", sites[i]),
                                     year = 2026, location = sites[i], confirm = FALSE, description = "x"))
-      sheet <- phenotype_template(designs[[i]], paste0("T_", sites[i]), traits = "fresh root yield")
+      sheet <- phenotype_template(designs[[i]], paste0("T_", sites[i]), traits = "fresh root yield",
+                                  location = sites[i])
       sheet$`fresh root yield` <- round(50 + g[sheet$accession] + 0.5 * sheet$row + rnorm(nrow(sheet)), 2)
       sheet$`fresh root yield`[5] <- 500                         # an outlier
       capture.output(save_breedbase_phenotypes(sheet, con, confirm = FALSE))
@@ -1420,4 +1512,143 @@ test_that("spaces in saved names become '_', accession and location names are ke
   expect_equal(bb_clean_name(c("AYT 50% $x (BA) {1} [2] a\\b/c <d> e*f", "Alcoba\u00e7a-1.2"), quiet = TRUE),
                c("AYT_50_x_BA_1_2_a_b_c_d_e_f", "Alcoba\u00e7a-1.2"))
   expect_error(bb_clean_name("()", "trial name"), "no letters or digits")
+})
+
+test_that("plot names are made with the design, can be changed and are used when saving", {
+  rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4,
+                                    n_candidates = 5, seed = 1, trial_name = "AYT_2026", location = "Ibadan")
+  first <- rc$design[rc$design$plots == 1, ]
+  expect_equal(first$plot_name, paste("AYT_2026", "Ibadan", first$all_entries, first$block, first$rep, sep = "_"))
+  expect_false(anyDuplicated(rc$design$plot_name) > 0)
+  rc0 <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
+  expect_false("plot_name" %in% names(rc0$design))
+  save <- function(d) suppressMessages(save_breedbase(d, trial_name = "AYT_2026", year = 2026, location = "Ibadan",
+                                                      description = "x", dry_run = TRUE))
+  expect_identical(save(rc), save(rc0))
+  expect_identical(phenotype_template(rc)$plot_name, phenotype_template(rc0, "AYT_2026", location = "Ibadan")$plot_name)
+  rc$design$plot_name[rc$design$plots == 1] <- "MY_OWN_NAME"
+  expect_true("MY_OWN_NAME" %in% vapply(save(rc)$plots[[1]], `[[`, "", "observationUnitName"))
+  expect_error(add_plot_names(rc0, "AYT_2026"), "uses \\{location\\}")
+  rc2 <- add_plot_names(rc0, "AYT_2026", plot_name_pattern = "{trial}_{plot}")
+  expect_equal(rc2$design$plot_name[rc2$design$plots == 7], "AYT_2026_7")
+  prep <- augmented_prep_design(paste0("G", 1:60), c("North", "South"), block_size = 8, n_candidates = 5,
+                                seed = 1, trial_name = "PREP")
+  expect_true(all(startsWith(prep$design$plot_name[prep$design$location == "South"], "PREP_South_South_")))
+  expect_identical(suppressMessages(save_breedbase(prep, trial_name = "PREP", year = 2026, description = "x",
+                                                   dry_run = TRUE))$plots,
+                   suppressMessages(save_breedbase(augmented_prep_design(paste0("G", 1:60), c("North", "South"),
+                     block_size = 8, n_candidates = 5, seed = 1), trial_name = "PREP", year = 2026,
+                     description = "x", dry_run = TRUE))$plots)
+})
+
+test_that("breedbase_check finds plot names from designs", {
+  rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
+  named <- add_plot_names(rc, "A", location = "Ibadan")
+  expect_length(bb_check_plot_input(named)$names, 144)
+  expect_equal(bb_check_plot_input(rc)$unnamed, 1L)
+  both <- bb_check_plot_input(list(rc, rc), trial_name = c("A", "B"), location = c("Ibadan", "Ubiaja"))
+  expect_length(both$names, 288)
+  expect_true(all(startsWith(both$names[145:288], "B_Ubiaja_")))
+  expect_equal(bb_check_plot_input(rc, trial_name = c("A", "B"))$unnamed, 1L)
+  expect_setequal(bb_accession_names(list(rc, rc)), c(paste0("G", 1:108), paste0("C", 1:4)))
+})
+
+test_that("plot coordinates: from the field corner, points and tables", {
+  rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
+  g <- add_plot_coordinates(rc, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5, row_gap = 1)
+  d <- g$design
+  p11 <- d[d$row == 1 & d$col == 1, ]
+  expect_equal(p11$WGS84_bottom_left_y, 7.5)
+  expect_equal(p11$WGS84_bottom_left_x, 3.9)
+  # Distances in metres, with a local degree length.
+  m_lat <- 110574; m_lon <- 110339
+  p12 <- d[d$row == 1 & d$col == 2, ]
+  p21 <- d[d$row == 2 & d$col == 1, ]
+  expect_equal((p12$WGS84_bottom_left_x - 3.9) * m_lon, 3, tolerance = 0.01)      # columns go east
+  expect_equal((p21$WGS84_bottom_left_y - 7.5) * m_lat, 6, tolerance = 0.01)      # rows go north (5 m + 1 m alley)
+  expect_equal(p11$WGS84_top_right_y - p11$WGS84_bottom_left_y, 5 / m_lat, tolerance = 0.01)
+  # Rotated: columns north-east.
+  r <- add_plot_coordinates(rc, origin = c(7.5, 3.9), plot_width = 10, plot_length = 5,
+                            col_bearing = 45, row_bearing = 315)$design
+  q <- r[r$row == 1 & r$col == 2, ]
+  expect_equal((q$WGS84_bottom_left_x - 3.9) * m_lon, 10 * sin(pi / 4), tolerance = 0.01)
+  expect_equal((q$WGS84_bottom_left_y - 7.5) * m_lat, 10 * cos(pi / 4), tolerance = 0.01)
+  expect_error(add_plot_coordinates(rc, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5, row_bearing = 45),
+               "right angles")
+  expect_error(add_plot_coordinates(rc, origin = c(200, 3.9), plot_width = 3, plot_length = 5), "swapped")
+  expect_error(add_plot_coordinates(rc), "Give one of")
+
+  # GeoJSON in the payload, as Breedbase stores it: [lon, lat], closed ring.
+  pay <- save_breedbase(g, trial_name = "T", year = 2026, location = "Ibadan", description = "x", dry_run = TRUE)
+  geo <- pay$plots[[1]][[1]]$observationUnitPosition$geoCoordinates
+  expect_equal(geo$geometry$type, "Polygon")
+  ring <- geo$geometry$coordinates[[1]]
+  expect_length(ring, 5)
+  expect_equal(ring[[1]], ring[[5]])
+  first <- g$design[g$design$plots == 1, ]
+  expect_equal(ring[[1]], c(first$WGS84_bottom_left_x, first$WGS84_bottom_left_y))
+
+  # Points from a table matched by plot number; Breedbase template names too.
+  pts <- data.frame(plot_number = rc$design$plots, WGS84_y = 7.5 + rc$design$row / 1e4,
+                    WGS84_x = 3.9 + rc$design$col / 1e4)
+  pt <- add_plot_coordinates(rc, coordinates = pts[sample(nrow(pts)), ])
+  expect_equal(pt$design$latitude, 7.5 + rc$design$row / 1e4)
+  expect_false(any(bb_corner_cols %in% names(pt$design)))
+  pay <- save_breedbase(pt, trial_name = "T", year = 2026, location = "Ibadan", description = "x", dry_run = TRUE)
+  geo <- pay$plots[[1]][[1]]$observationUnitPosition$geoCoordinates
+  expect_equal(geo$geometry$type, "Point")
+  expect_equal(geo$geometry$coordinates, c(pt$design$longitude[pt$design$plots == 1], pt$design$latitude[pt$design$plots == 1]))
+  expect_error(add_plot_coordinates(rc, coordinates = rbind(pts, transform(pts[1, ], plot_number = 999L))),
+               "match no plot")
+  # Vectors; a plot without coordinates is saved without them.
+  lat <- 7.5 + rc$design$row / 1e4; lat[1] <- NA
+  expect_message(v <- add_plot_coordinates(rc, latitude = lat, longitude = 3.9 + rc$design$col / 1e4), "1 plot has no")
+  pay <- save_breedbase(v, trial_name = "T", year = 2026, location = "Ibadan", description = "x", dry_run = TRUE)
+  has <- vapply(pay$plots[[1]], function(p) !is.null(p$observationUnitPosition$geoCoordinates), logical(1))
+  expect_equal(sum(has), 143)
+
+  # p-rep: one origin per location.
+  bare <- augmented_prep_design(paste0("G", 1:60), c("North", "South"), block_size = 8, n_candidates = 5, seed = 1)
+  expect_error(add_plot_coordinates(bare, origin = list(North = c(7.5, 3.9), South = c(6.1, 5.2)),
+                                    plot_width = 3, plot_length = 5), "field layout")
+  prep <- augmented_prep_design(paste0("G", 1:60), c("North", "South"), block_size = 8, n_candidates = 5, seed = 1,
+                                rows_per_block = 2, blocks_per_row = 2)
+  expect_false(anyNA(prep$design$row))
+  expect_error(add_plot_coordinates(prep, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5), "one c\\(latitude")
+  pp <- add_plot_coordinates(prep, origin = list(North = c(7.5, 3.9), South = c(6.1, 5.2)),
+                             plot_width = 3, plot_length = 5)
+  expect_true(all(pp$design$latitude[pp$design$location == "South"] < 7))
+})
+
+test_that("plot coordinates are saved after the plots and read back", {
+  skip_if_not_installed("httr2")
+  rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
+  g <- add_plot_coordinates(rc, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5)
+  fake <- fake_breedbase()
+  httr2::with_mocked_responses(fake$mock, {
+    con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
+    out <- NULL
+    printed <- capture.output(out <- save_breedbase(g, con, program = "IITA", trial_name = "GPS_2026", year = 2026,
+                                                    location = "Ibadan", description = "x", confirm = FALSE))
+    expect_equal(out$plots_with_gps, 144)
+    expect_equal(out$gps_found, 144)
+    expect_true(any(grepl("GPS coordinates of trial 'GPS_2026' saved for 144 of 144", printed)))
+    puts <- Filter(function(r) r$method == "PUT", fake$state$requests)
+    expect_true(length(puts) >= 1)
+    expect_null(puts[[1]]$body[[1]]$observationUnitPosition$observationLevel$levelCode)   # plot numbers untouched
+    stored <- Filter(function(u) u$observationUnitPosition$observationLevel$levelCode == "1", fake$state$plots)[[1]]
+    expect_equal(stored$observationUnitPosition$geoCoordinates$geometry$type, "Polygon")
+
+    # A trial saved without GPS gets it later; plots matched by number,
+    # accessions checked.
+    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "LATER_2026", year = 2026,
+                                  location = "Ibadan", description = "x", confirm = FALSE))
+    capture.output(res <- save_breedbase_coordinates(g, con, trial_name = "LATER_2026", confirm = FALSE))
+    expect_equal(res$gps_found, 144)
+    other <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 2)
+    other <- add_plot_coordinates(other, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5)
+    expect_error(capture.output(save_breedbase_coordinates(other, con, trial_name = "LATER_2026", confirm = FALSE)),
+                 "another accession")
+    expect_error(save_breedbase_coordinates(rc, con, trial_name = "LATER_2026"), "no plot coordinates")
+  })
 })

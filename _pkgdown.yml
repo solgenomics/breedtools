@@ -99,12 +99,15 @@ reference:
 
   - title: Save designs to Breedbase
     desc: >
-      Convert agricolae designs, preview the payload, and save trials with
-      their plots.
+      Convert agricolae designs, add plot names and GPS coordinates, preview
+      the payload, and save trials with their plots.
     contents:
       - prepare_breedbase_trial
       - as_breedbase_design
+      - add_plot_names
+      - add_plot_coordinates
       - save_breedbase
+      - save_breedbase_coordinates
       - breedbase_trial_plots
       - phenotype_template
 
@@ -117,6 +120,8 @@ reference:
       - save_breedbase_phenotypes
       - save_breedbase_first_stage
       - save_breedbase_analysis
+      - analysis_plot_names
+      - breedbase_analysis_plots
       - add_breedbase_analysis_values
 
   - title: Multi-environment trials from Breedbase files

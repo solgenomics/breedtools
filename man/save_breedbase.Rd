@@ -16,7 +16,7 @@ save_breedbase(
   trial_type = "phenotyping_trial",
   design_type = NULL,
   plot_names = NULL,
-  plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
+  plot_name_pattern = NULL,
   create_folder = FALSE,
   dry_run = FALSE,
   confirm = interactive()
@@ -72,10 +72,13 @@ the name of a column of \code{design$design} that holds them. Names must be
 unique.}
 
 \item{plot_name_pattern}{Pattern for automatic plot names, used when
-\code{plot_names} is \code{NULL}. The default \code{"{trial}_{accession}_{block}_{rep}"}
-gives names like \code{"AYT_2026_LINE_007_3_1"}. Available fields: \code{{trial}}
-(the Breedbase trial name), \code{{accession}}, \code{{block}}, \code{{rep}}, \code{{plot}}
-(plot number), \code{{row}} and \code{{col}}. If a pattern gives the same name to
+\code{plot_names} is \code{NULL}. With \code{NULL} (the default) the \code{plot_name}
+column of the design is used when it has one, and otherwise the pattern
+\code{"{trial}_{location}_{accession}_{block}_{rep}"}, which gives names like
+\code{"AYT_2026_Ibadan_LINE_007_3_1"}. Available fields: \code{{trial}} (the
+Breedbase trial name), \code{{location}} (the Breedbase location, with spaces
+and special characters replaced by \code{"_"}), \code{{accession}}, \code{{block}},
+\code{{rep}}, \code{{plot}} (plot number), \code{{row}} and \code{{col}}. If a pattern gives the same name to
 two plots (the same accession twice in one block and rep), the plot
 number is added to those names.}
 
@@ -88,8 +91,9 @@ sessions).}
 }
 \value{
 Invisibly, a tibble with one row per Breedbase trial: location,
-trial name, trial id, number of plots sent and found after saving, and
-the address of the trial page. With \code{dry_run = TRUE} and no connection,
+trial name, trial id, number of plots sent and found after saving,
+number of plots with GPS coordinates sent and found, and the address of
+the trial page. With \code{dry_run = TRUE} and no connection,
 a list with the trial and plot data that would be sent.
 }
 \description{
@@ -107,7 +111,12 @@ name is free. In an interactive session you are then asked to confirm.
 After saving, the plots are read back from Breedbase to verify the upload.
 
 Each plot is saved with its name, plot number, row and column, rep, block
-and whether it is a check. Plot names are made automatically from the
+and whether it is a check, and its GPS coordinates when the design has
+them (see \code{\link[=add_plot_coordinates]{add_plot_coordinates()}}; they are sent just after the plots
+and read back to check). Plot names stored in the design (a \code{plot_name}
+column, made by the design functions when given a \code{trial_name} or by
+\code{\link[=add_plot_names]{add_plot_names()}}) are used as they are, so they can be reviewed and
+changed before saving. Otherwise they are made automatically from the
 trial name, accession, block and rep (see \code{plot_name_pattern}), or you can
 give your own with \code{plot_names}. Plot names must be unique in the whole
 database, which is checked before saving. A multi-location p-rep design becomes one Breedbase

@@ -8,8 +8,9 @@ phenotype_template(
   design,
   trial_name,
   traits = character(0),
-  plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
-  plot_names = NULL
+  plot_name_pattern = NULL,
+  plot_names = NULL,
+  location = NULL
 )
 }
 \arguments{
@@ -19,13 +20,19 @@ phenotype_template(
 
 \item{trial_name}{The trial name used when saving the design. For p-rep
 designs saved as one trial per location, the location is added as in
-\code{\link[=save_breedbase]{save_breedbase()}}. Can be omitted for a prepared Breedbase trial.}
+\code{\link[=save_breedbase]{save_breedbase()}}. Can be omitted for a prepared Breedbase trial or a
+design with plot names (see \code{\link[=add_plot_names]{add_plot_names()}}).}
 
 \item{traits}{Trait names as in Breedbase, e.g. \code{"fresh root yield"} or
 \code{"fresh root yield|CO_334:0000013"}. Can be empty (no trait columns).}
 
 \item{plot_name_pattern, plot_names}{The same plot naming used in
-\code{\link[=save_breedbase]{save_breedbase()}}.}
+\code{\link[=save_breedbase]{save_breedbase()}}. By default the plot names stored in the design are
+used, when it has them.}
+
+\item{location}{The Breedbase location of the trial, needed when the
+plot names are made here with the \code{{location}} field (the default
+pattern) and the design has no stored plot names.}
 }
 \value{
 A tibble: \code{plot_name}, \code{trial_name}, \code{accession}, \code{plot_number},
@@ -41,7 +48,7 @@ it in (in R or in a spreadsheet) and upload it with
 \examples{
 rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
-sheet <- phenotype_template(rc, "AYT_2026_Ibadan",
+sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan",
                             traits = c("fresh root yield", "dry matter content percentage"))
 head(sheet)
 

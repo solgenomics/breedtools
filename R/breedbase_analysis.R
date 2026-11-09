@@ -32,7 +32,10 @@
 #' @param trial_name The trial name used when saving the design (not needed
 #'   without a design).
 #' @param trait Trait name when `fits` is a single analysis.
-#' @param plot_name_pattern,plot_names The plot naming used in [save_breedbase()].
+#' @param plot_name_pattern,plot_names,location The plot naming used in
+#'   [save_breedbase()]; `location` is the Breedbase location of the trial,
+#'   needed for the `{location}` field when the design has no stored plot
+#'   names.
 #' @param breedbase_plots Optional plots of the saved trial, from
 #'   [breedbase_trial_plots()]. The design is then checked against the saved
 #'   trial (the same accession at every plot number), and the plot names are
@@ -50,13 +53,14 @@
 #' set.seed(1)
 #' d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 #' fit <- analyze_augmented_row_column_design(d, "yield")
-#' values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+#' values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+#'                             location = "Ibadan")
 #' head(values)
 #'
 #' @export
 first_stage_values <- function(fits, design = NULL, trial_name = NULL, trait = NULL,
-                               plot_name_pattern = "{trial}_{accession}_{block}_{rep}", plot_names = NULL,
-                               breedbase_plots = NULL) {
+                               plot_name_pattern = NULL, plot_names = NULL,
+                               breedbase_plots = NULL, location = NULL) {
   if (bb_is_analysis(fits)) {
     if (is.null(trait) || length(trait) != 1 || !nzchar(trait)) {
       stop("Give the Breedbase `trait` name of this analysis, e.g. trait = \"fresh root yield\".", call. = FALSE)
@@ -73,7 +77,7 @@ first_stage_values <- function(fits, design = NULL, trial_name = NULL, trait = N
   # the data, no design object is needed.
   if (is.null(design)) return(bb_first_stage_from_data(fits))
 
-  table <- bb_design_plot_table(design, trial_name, plot_name_pattern, plot_names)
+  table <- bb_design_plot_table(design, trial_name, plot_name_pattern, plot_names, location = location)
   is_prep <- inherits(design, "augmented_prep_design")
   key_table <- paste(if (is_prep) table$.design_location else "", table$.design_plots, sep = "\r")
   spatial <- FALSE
@@ -501,7 +505,8 @@ bb_composed_trait_id <- function(con, components) {
 #' set.seed(1)
 #' d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 #' fit <- analyze_augmented_row_column_design(d, "yield")
-#' values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+#' values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+#'                             location = "Ibadan")
 #' obs <- save_breedbase_first_stage(values, dry_run = TRUE)
 #' head(obs)
 #'
@@ -1278,4 +1283,182 @@ bb_analysis_row_count <- function(con, analysis_id) {
                    breedbase_error = function(e) NULL)
   if (is.null(body) || is.null(body$data)) return(NA_integer_)
   max(length(body$data) - 1L, 0L)
+}
+
+#' Plot and accession names an analysis will have, before saving
+#'
+#' Shows, without contacting Breedbase, the names under which
+#' [save_breedbase_analysis()] (or [add_breedbase_analysis_values()]) stores
+#' each row of `data`: Breedbase gives every analysis its own plots, named
+#' `"<analysis_name>_<field plot name>"` ("Analysis of: plots", with the
+#' accession of the field plot) or `"<analysis_name>_<accession>"`
+#' ("Analysis of: accessions"). Use it to see what will be saved, and to
+#' compare with the plots of a saved analysis
+#' ([breedbase_analysis_plots()]).
+#'
+#' @param data A data frame with one row per field plot (`level = "plot"`,
+#'   e.g. from [first_stage_values()]) or per accession (`level =
+#'   "accession"`, e.g. from [second_stage_values()]) and one column per
+#'   trait.
+#' @param analysis_name The analysis name, as given to
+#'   [save_breedbase_analysis()] (special characters are replaced with `"_"`
+#'   the same way).
+#' @param level `"plot"` or `"accession"`.
+#' @param plot,accession Names of the plot-name and accession columns.
+#' @param traits Trait columns (default: all except the name and design
+#'   columns).
+#'
+#' @return A tibble with `analysis_plot_name` (the name in the analysis),
+#'   `plot_name` (the field plot; for accession analyses, the accession),
+#'   `accession`, and the trait values.
+#'
+#' @examples
+#' rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
+#'                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
+#' d <- rc$design
+#' set.seed(1)
+#' d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
+#' fit <- analyze_augmented_row_column_design(d, "yield")
+#' values <- first_stage_values(fit, rc, "AYT_2026", trait = "fresh root yield", location = "Ibadan")
+#' head(analysis_plot_names(values, "AYT_2026_stage1", level = "plot"))
+#'
+#' @export
+analysis_plot_names <- function(data, analysis_name, level = c("plot", "accession"), plot = "plot_name",
+                                accession = "accession", traits = NULL) {
+  level <- match.arg(level)
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  if (missing(analysis_name) || length(analysis_name) != 1 || is.na(analysis_name) || !nzchar(trimws(analysis_name))) {
+    stop("Give the `analysis_name`.", call. = FALSE)
+  }
+  analysis_name <- bb_clean_name(analysis_name, "analysis name", quiet = TRUE)
+  data <- as.data.frame(data, stringsAsFactors = FALSE, check.names = FALSE)
+  key <- if (level == "plot") plot else accession
+  if (!key %in% names(data)) stop("Column '", key, "' not found in `data`.", call. = FALSE)
+  design_cols <- c("plot_name", "trial_name", "accession", "plot_number", "block", "rep", "row", "col", "is_check")
+  if (is.null(traits)) traits <- setdiff(names(data), c(key, accession, plot, design_cols))
+  stocks <- trimws(as.character(data[[key]]))
+  out <- tibble::tibble(
+    analysis_plot_name = paste0(analysis_name, "_", stocks),
+    plot_name = stocks,
+    accession = if (accession %in% names(data)) as.character(data[[accession]]) else NA_character_
+  )
+  for (t in traits) out[[t]] <- data[[t]]
+  out
+}
+
+#' Plots of an analysis saved in Breedbase
+#'
+#' Reads back the plots of an existing analysis (from
+#' [save_breedbase_analysis()] or made on the website): the analysis plot
+#' names, the field plot (or accession) each one stands for, its accession
+#' and design, and the values of every trait stored in the analysis. Use it
+#' to see what an analysis holds before adding values with
+#' [add_breedbase_analysis_values()], e.g. a second trait.
+#'
+#' Analysis plots are not part of BrAPI, so they are read through the web
+#' pages of Breedbase (the site's web password is needed when it has one;
+#' see [breedbase_login()]).
+#'
+#' Breedbase lists the plots of an analysis through their values: a plot
+#' without any value (e.g. a lost plot, or an outlier removed before the
+#' analysis) is not listed, although it is part of the analysis.
+#'
+#' @param con A connection from [breedbase_login()].
+#' @param analysis_name Name of the analysis.
+#'
+#' @return A tibble with `analysis_plot_name`, `plot_name` (the field plot,
+#'   or the accession for accession analyses: the name to use in the `plot`
+#'   or `accession` column of [add_breedbase_analysis_values()]),
+#'   `accession`, `plot_number`, `rep`, `block`, `row`, `col` and one column
+#'   per trait, ordered by plot number. The analysis id is in the attribute
+#'   `"analysis_db_id"`.
+#'
+#' @examples
+#' \dontrun{
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+#' plots <- breedbase_analysis_plots(con, "AYT_2026_stage1")
+#' head(plots)
+#' }
+#'
+#' @export
+breedbase_analysis_plots <- function(con, analysis_name) {
+  if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
+  if (identical(bb_web_access(con), "password")) {
+    stop("This site's web pages need their own web password; log in with site_username = \"...\" ",
+         "(see ?breedbase_login).", call. = FALSE)
+  }
+  id <- bb_find_analysis(con, bb_clean_name(analysis_name, quiet = TRUE))
+  if (!is.na(id)) {
+    analysis_name <- bb_clean_name(analysis_name, quiet = TRUE)
+  } else {
+    id <- bb_find_analysis(con, analysis_name)
+  }
+  if (is.na(id)) stop("Analysis '", analysis_name, "' was not found among your analyses.", call. = FALSE)
+  # The traits of the analysis, with their ids, as the trial page lists them
+  # ([trait id, trait name, ...] per trait); the analysis summary is the
+  # fallback (its trait list depends on the Breedbase version).
+  assayed <- bb_ajax_get(con, paste0("ajax/breeders/trial/", id, "/traits_assayed"),
+                         what = "list the traits of the analysis")$traits_assayed
+  while (length(assayed) == 1 && is.list(assayed[[1]]) && length(assayed[[1]]) && is.list(assayed[[1]][[1]])) {
+    assayed <- assayed[[1]]                          # Breedbase wraps the list once more
+  }
+  trait_ids <- stats::setNames(
+    vapply(assayed, function(x) as.character(unlist(x[1])), character(1)),
+    vapply(assayed, function(x) as.character(unlist(x[2])), character(1)))
+  if (!length(trait_ids)) {
+    info <- bb_ajax_get(con, paste0("ajax/analysis/", id, "/retrieve"), what = "read the analysis")
+    for (t in unique(as.character(unlist(info$traits)))) {
+      tid <- unname(bb_find_variables(con, t))
+      if (is.na(tid)) tid <- bb_find_variable_exact(con, sub("\\|[A-Za-z][A-Za-z0-9_]*:[0-9]+$", "", t))
+      if (!is.na(tid)) trait_ids[[t]] <- tid
+    }
+  }
+  if (!length(trait_ids)) stop("Analysis '", analysis_name, "' has no trait values.", call. = FALSE)
+  traits <- names(trait_ids)
+  rows <- list()
+  for (t in traits) {
+    tid <- trait_ids[[t]]
+    body <- bb_ajax_get(con, paste0("ajax/breeders/trial/", id, "/trait_phenotypes"),
+                        query = list(display = "analysis_instance", trait = tid),
+                        what = paste0("read the values of '", t, "' in the analysis"))
+    m <- body$data
+    if (length(m) < 2) next
+    header <- vapply(m[[1]], function(x) as.character(x %||% NA), character(1))
+    col <- function(name) match(name, header)
+    tcol <- which(header == t)
+    if (!length(tcol)) tcol <- length(header)            # the trait is the last column
+    cell <- function(r, j) {
+      v <- if (is.na(j) || j > length(r)) NULL else unlist(r[[j]])
+      if (!length(v) || is.na(v[1]) || !nzchar(as.character(v[1]))) NA_character_ else as.character(v[1])
+    }
+    for (r in m[-1]) {
+      unit <- cell(r, col("observationUnitName"))
+      if (is.null(rows[[unit]])) {
+        rows[[unit]] <- list(analysis_plot_name = unit, accession = cell(r, col("germplasmName")),
+                             plot_number = cell(r, col("plotNumber")), rep = cell(r, col("replicate")),
+                             block = cell(r, col("blockNumber")), row = cell(r, col("rowNumber")),
+                             col = cell(r, col("colNumber")))
+      }
+      rows[[unit]][[t]] <- cell(r, tcol[1])
+    }
+  }
+  if (!length(rows)) stop("No plots with values were found in analysis '", analysis_name, "'.", call. = FALSE)
+  num <- function(x) suppressWarnings(as.numeric(x))
+  get <- function(field) vapply(rows, function(x) x[[field]] %||% NA_character_, character(1), USE.NAMES = FALSE)
+  units <- get("analysis_plot_name")
+  prefix <- paste0(analysis_name, "_")
+  out <- tibble::tibble(
+    analysis_plot_name = units,
+    plot_name = ifelse(startsWith(units, prefix), substring(units, nchar(prefix) + 1), units),
+    accession = get("accession"),
+    plot_number = as.integer(num(get("plot_number"))),
+    rep = as.integer(num(get("rep"))),
+    block = as.integer(num(get("block"))),
+    row = as.integer(num(get("row"))),
+    col = as.integer(num(get("col")))
+  )
+  for (t in traits) out[[t]] <- num(get(t))
+  out <- out[order(out$plot_number, out$analysis_plot_name), , drop = FALSE]
+  attr(out, "analysis_db_id") <- id
+  out
 }

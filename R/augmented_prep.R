@@ -96,6 +96,14 @@
 #' @param output_file Optional tab-delimited output file for the complete
 #'   design.
 #'
+#' @param trial_name Optional Breedbase trial name. When given, a
+#'   `plot_name` column with the plot names used by [save_breedbase()] is
+#'   added to the design (see [add_plot_names()]), so the names can be
+#'   checked with [breedbase_check()] and changed before saving. For a
+#'   multi-location design the location is added, one trial per location.
+#' @param plot_name_pattern Pattern for the plot names, as in
+#'   [add_plot_names()]. Used only with `trial_name`; `{location}` is the
+#'   design location.
 #' @details
 #' With `method = "search"`, the p-rep plots of every location are spread
 #' evenly over its blocks, and the p-rep entries are placed so that they link
@@ -174,7 +182,9 @@ augmented_prep_design <- function(
     output_file = NULL,
     method = c("search", "alpha", "alpha2"),
     n_prep_per_block = NULL,
-    n_efficiency_candidates = 5
+    n_efficiency_candidates = 5,
+    trial_name = NULL,
+    plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 ) {
   method <- match.arg(method)
   n_efficiency_candidates <- arc_positive_integer(n_efficiency_candidates, "n_efficiency_candidates")
@@ -291,6 +301,7 @@ augmented_prep_design <- function(
     concurrence_matrix = best$concurrence_matrix
   )
   class(result) <- c("augmented_prep_design", class(result))
+  if (!is.null(trial_name)) result <- add_plot_names(result, trial_name, plot_name_pattern = plot_name_pattern)
 
   if (!is.null(output_file)) {
     utils::write.table(result$design, output_file, quote = FALSE, sep = "\t", row.names = FALSE)

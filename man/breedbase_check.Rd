@@ -10,15 +10,17 @@ breedbase_check(
   location = NULL,
   program = NULL,
   folder = NULL,
-  trial_name = NULL
+  trial_name = NULL,
+  plot_names = NULL
 )
 }
 \arguments{
 \item{con}{A connection from \code{\link[=breedbase_login]{breedbase_login()}}.}
 
-\item{accessions}{Entry and check names: a character vector, or a design
-from \code{\link[=augmented_row_column_design]{augmented_row_column_design()}}, \code{\link[=augmented_prep_design]{augmented_prep_design()}} or
-\code{\link[=resolvable_row_column_design]{resolvable_row_column_design()}}.}
+\item{accessions}{Entry and check names: a character vector, a design
+from \code{\link[=augmented_row_column_design]{augmented_row_column_design()}}, \code{\link[=augmented_prep_design]{augmented_prep_design()}},
+\code{\link[=resolvable_row_column_design]{resolvable_row_column_design()}} or \code{\link[=as_breedbase_design]{as_breedbase_design()}}, or a list
+of such designs (e.g. one per location).}
 
 \item{location}{Breedbase location name(s).}
 
@@ -29,6 +31,17 @@ program).}
 \item{trial_name}{Optional trial name(s), e.g. one per location. A name
 already used by a trial (with plots) is reported as
 \code{"TAKEN"}: change it before saving.}
+
+\item{plot_names}{Optional plot names to check: a character vector, a
+design, or a list of designs. By default the plot names stored in the
+design(s) given in \code{accessions} are checked (see \code{\link[=add_plot_names]{add_plot_names()}}).
+A design without stored plot names gets the default names of
+\code{\link[=save_breedbase]{save_breedbase()}} for the check when it can be matched to one trial
+name and location (one design and one \code{trial_name}, or a list of
+designs and one trial name and location per design). Plot names must be unique in the whole
+database: a name already used is reported as \code{"TAKEN"}, a name given to
+two plots as \code{"REPEATED"}. To save with other names, change the
+\code{plot_name} column of the design or use \code{\link[=add_plot_names]{add_plot_names()}}.}
 }
 \value{
 Invisibly, a tibble with one row per name checked: \code{what}, \code{name},

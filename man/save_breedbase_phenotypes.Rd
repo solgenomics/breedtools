@@ -127,7 +127,7 @@ wait longer (seconds) for each answer.
 \examples{
 rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
-sheet <- phenotype_template(rc, "AYT_2026_Ibadan", traits = "fresh root yield")
+sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = "fresh root yield")
 sheet$`fresh root yield` <- round(rnorm(nrow(sheet), 25, 4), 1)
 
 # What would be sent (no connection needed):

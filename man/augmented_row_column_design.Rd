@@ -18,7 +18,10 @@ augmented_row_column_design(
   rows_per_rowgroup = NULL,
   cols_per_colgroup = NULL,
   checks_per_block = NULL,
-  method = c("auto", "latin", "optimal")
+  method = c("auto", "latin", "optimal"),
+  trial_name = NULL,
+  location = NULL,
+  plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 )
 }
 \arguments{
@@ -55,6 +58,17 @@ group sizes, as in \code{\link[=augmented_row_column_capacity]{augmented_row_col
 
 \item{method}{Check allocation method: \code{"auto"}, \code{"latin"} or
 \code{"optimal"}.}
+
+\item{trial_name}{Optional Breedbase trial name. When given, a
+\code{plot_name} column with the plot names used by \code{\link[=save_breedbase]{save_breedbase()}} is
+added to the design (see \code{\link[=add_plot_names]{add_plot_names()}}), so the names can be
+checked with \code{\link[=breedbase_check]{breedbase_check()}} and changed before saving.}
+
+\item{location}{Breedbase location of the trial, for the \code{{location}}
+field of the plot names. Used only with \code{trial_name}.}
+
+\item{plot_name_pattern}{Pattern for the plot names, as in
+\code{\link[=add_plot_names]{add_plot_names()}}. Used only with \code{trial_name}.}
 }
 \value{
 A list with:

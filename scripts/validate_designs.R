@@ -213,7 +213,9 @@ rc_designs <- lapply(seq_along(rc_sites), function(i) {
     checks_per_block = rc_layout$checks_per_block[[1]],
     method           = rc_layout$method,
     n_candidates     = rc_layout$n_candidates,
-    seed             = 2026 + i           # a different randomization per location
+    seed             = 2026 + i,          # a different randomization per location
+    trial_name       = rc_trials[i],      # plot names made now: see rc$design$plot_name
+    location         = rc_sites[i]
   )
 })
 names(rc_designs) <- rc_sites
@@ -236,8 +238,10 @@ rc_sent <- save_breedbase(rc, trial_name = rc_trials[1], year = my_year, locatio
                           dry_run = TRUE, description = "Advanced yield trial, 108 lines and 4 checks")
 print(head(vapply(rc_sent$plots[[1]], function(p) p$observationUnitName, character(1))))  # plot names
 if (save_designs) {
-  # Check the names first: locations, entries and checks, program, folder.
-  ready <- breedbase_check(con, accessions = rc, location = rc_sites, program = my_program, folder = my_folder)
+  # Check the names first: locations, entries and checks, program, folder,
+  # trial names and the plot names of every location's design.
+  ready <- breedbase_check(con, accessions = rc_designs, location = rc_sites, program = my_program,
+                           folder = my_folder, trial_name = rc_trials)
   if (!attr(ready, "ok")) stop("Fix the names listed above, then run this part again.")
   for (i in seq_along(rc_sites)) {
     save_breedbase(rc_designs[[i]], con, program = my_program, folder = my_folder,
@@ -792,7 +796,8 @@ rrc_met <- do.call(rbind, lapply(seq_along(rrc_sites), function(i) {
   d
 }))
 rrc_sheets <- lapply(seq_along(rrc_sites), function(i) {
-  sheet <- phenotype_template(rrc_designs[[i]], trial_name = rrc_trials[i], traits = my_trait)
+  sheet <- phenotype_template(rrc_designs[[i]], trial_name = rrc_trials[i], location = rrc_sites[i],
+                              traits = my_trait)
   here <- rrc_met[rrc_met$location == rrc_sites[i], ]
   sheet[[my_trait]] <- here$yield[match(sheet$plot_number, here$plots)]
   sheet
@@ -820,7 +825,8 @@ print(c(rc_one_location = prediction_accuracy(rrc_fit, rrc_value),
 
 # ---- E8. Results to Breedbase -----------------------------------------------------------------------
 rrc_stage1 <- do.call(rbind, lapply(seq_along(rrc_sites), function(i) {
-  first_stage_values(rrc_two$stage1_fits[[rrc_sites[i]]], rrc_designs[[i]], rrc_trials[i], trait = my_trait)
+  first_stage_values(rrc_two$stage1_fits[[rrc_sites[i]]], rrc_designs[[i]], rrc_trials[i], trait = my_trait,
+                     location = rrc_sites[i])
 }))
 rrc_stage2 <- second_stage_values(rrc_two, trait = my_trait)
 if (save_phenotypes) for (sheet in rrc_sheets) save_breedbase_phenotypes(sheet, con, confirm = FALSE)

@@ -19,7 +19,10 @@ resolvable_row_column_design(
   plot_type = c("serpentine", "cartesian"),
   seed = NULL,
   output_file = NULL,
-  start_design = NULL
+  start_design = NULL,
+  trial_name = NULL,
+  location = NULL,
+  plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 )
 }
 \arguments{
@@ -64,6 +67,17 @@ one produced by CycDesigN), as a data frame with \code{replicate},
 \code{row_in_rep}, \code{col_in_rep} and \code{all_entries} columns and complete
 replicates. The search then improves this design; use \code{n_iter = 1} and
 \code{spatial = FALSE} to keep it essentially as it is and only lay it out.}
+
+\item{trial_name}{Optional Breedbase trial name. When given, a
+\code{plot_name} column with the plot names used by \code{\link[=save_breedbase]{save_breedbase()}} is
+added to the design (see \code{\link[=add_plot_names]{add_plot_names()}}), so the names can be
+checked with \code{\link[=breedbase_check]{breedbase_check()}} and changed before saving.}
+
+\item{location}{Breedbase location of the trial, for the \code{{location}}
+field of the plot names. Used only with \code{trial_name}.}
+
+\item{plot_name_pattern}{Pattern for the plot names, as in
+\code{\link[=add_plot_names]{add_plot_names()}}. Used only with \code{trial_name}.}
 }
 \value{
 An object of class \code{resolvable_row_column_design}: a list with

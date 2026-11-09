@@ -926,11 +926,17 @@ breedbase_programs(con)
 breedbase_folders(con, program = "IITA")
 breedbase_locations(con)
 
-# Check the location and every entry and check before designing (or pass the
-# design itself). All problems are listed together, with close matches:
+# Check the location and every entry and check before designing. All
+# problems are listed together, with close matches:
 breedbase_check(con, accessions = c(paste0("G", 1:108), paste0("C", 1:4)),
                 location = "Ibadan", program = "IITA", folder = "AYT 2026",
                 trial_name = "AYT_2026_Ibadan")
+
+# After designing, pass the design: its plot names are checked too (free in
+# the database, none repeated). For several trials, give a list of designs
+# with one trial name and location each.
+breedbase_check(con, accessions = rc, location = "Ibadan", program = "IITA",
+                folder = "AYT 2026", trial_name = "AYT_2026_Ibadan")
 
 # Checks everything (program, folder, location, accessions, trial name)
 # without writing:
@@ -957,27 +963,76 @@ Every entry and check must already exist as an accession in the database,
 and the location must exist too. Run `breedbase_check()` before building the
 design so that wrong names are fixed first; `save_breedbase()` repeats the
 same checks and lists every problem together before writing anything.
+`breedbase_check()` ends with a clear verdict and what it checked, e.g.
+
+```
+READY: everything checked can be saved to Breedbase (1 program, 1 folder, 1 location, 112 accessions, 1 trial name, 144 plot names).
+```
+
+or `NOT READY: fix 2 problems (...)` with each problem marked `[FIX]` above
+it. When a design's plot names cannot be checked (one design for several
+trial names), the list says `plot names NOT checked`.
 
 The new trial needs a name (`trial_name`) and a description
 (`description`, required: for example its purpose, material, location and
 season; it is shown on the trial page in Breedbase), and every plot needs a
 name that is unique in the whole database. By default plot names are made as
-`trialName_accession_block_rep`:
+`trialName_location_accession_block_rep`:
 
 ```{r}
 head(vapply(to_send$plots[[1]], function(p) p$observationUnitName, character(1)))
 ```
 
 Choose another pattern with `plot_name_pattern` (fields `{trial}`,
-`{accession}`, `{block}`, `{rep}`, `{plot}`, `{row}`, `{col}`), or give your
-own names with `plot_names`, one per plot or the name of a column you added
-to the field book:
+`{location}`, `{accession}`, `{block}`, `{rep}`, `{plot}`, `{row}`, `{col}`),
+or give your own names with `plot_names`, one per plot or the name of a
+column you added to the field book.
+
+To see the plot names before saving, and check them with
+`breedbase_check()`, give the design functions a `trial_name` (and
+`location`), or call `add_plot_names()`: the names go to a `plot_name`
+column of the design, which can be edited and is used as it is by
+`save_breedbase()` and `phenotype_template()`:
+
+```{r}
+rc_named <- add_plot_names(rc, "AYT_2026", location = "Ibadan")
+head(rc_named$design$plot_name)
+```
+
 
 ```{r}
 own <- save_breedbase(rc, trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
                       plot_name_pattern = "{trial}_{plot}_r{row}c{col}", dry_run = TRUE,
                       description = "Advanced yield trial of 108 lines and 4 checks, Ibadan 2026")
 head(vapply(own$plots[[1]], function(p) p$observationUnitName, character(1)))
+```
+
+## Plot GPS coordinates
+
+Breedbase can keep the GPS position of every plot and show the trial on its
+field map. `add_plot_coordinates()` adds them to the design; the most
+practical way is from the GPS of one corner of the field (the outer corner of
+the plot in row 1, column 1), the plot size and the alleys, in metres. The
+four corners of every plot are calculated from its row and column:
+
+```{r}
+rc_gps <- add_plot_coordinates(rc, origin = c(7.4931, 3.9035),
+                               plot_width = 3, plot_length = 5, row_gap = 1)
+head(rc_gps$design[, c("plots", "row", "col", "latitude", "longitude")])
+```
+
+By default columns run east and rows north; for a field at an angle give the
+compass directions, e.g. `col_bearing = 45, row_bearing = 315`. GPS points
+measured in the field work too: `latitude` and `longitude` (one per plot),
+or a `coordinates` table matched by plot name or plot number, including the
+GPS template of Breedbase's "Upload plot GPS" form.
+
+`save_breedbase()` saves the coordinates with the plots (they are sent just
+after the plots are created, as Breedbase stores them, and read back to
+check). For a trial that is already saved, e.g. measured after planting:
+
+```{r, eval = FALSE}
+save_breedbase_coordinates(rc_gps, con, trial_name = "AYT_2026_Ibadan")
 ```
 
 ## Saving phenotypic data to Breedbase
@@ -990,7 +1045,7 @@ without its ontology id (`"fresh root yield"` or
 empty column per trait:
 
 ```{r}
-sheet <- phenotype_template(rc, trial_name = "AYT_2026_Ibadan",
+sheet <- phenotype_template(rc, trial_name = "AYT_2026_Ibadan", location = "Ibadan",
                             traits = c("fresh root yield", "dry matter content percentage"))
 head(sheet)
 ```
@@ -1038,7 +1093,7 @@ field <- rc$design
 field$yield <- sheet$`fresh root yield`[match(field$plots, sheet$plot_number)]
 fit_yield <- analyze_augmented_row_column_design(field, "yield")
 
-stage1 <- first_stage_values(fit_yield, rc, trial_name = "AYT_2026_Ibadan", trait = "fresh root yield")
+stage1 <- first_stage_values(fit_yield, rc, trial_name = "AYT_2026_Ibadan", location = "Ibadan", trait = "fresh root yield")
 head(stage1)
 stage2 <- second_stage_values(fit_yield, trait = "fresh root yield")
 head(stage2)
@@ -1058,6 +1113,28 @@ save_breedbase_analysis(stage1, con, analysis_name = "AYT_2026_Ibadan_stage1", p
 the stage-1 fits per location of `analyze_augmented_prep_two_stage()` and
 `analyze_resolvable_row_column()`.
 
+An analysis does not change the field trial: Breedbase gives it its own
+plots, one per field plot, named `<analysis name>_<field plot name>`, with
+the accession of the field plot (or `<analysis name>_<accession>` for an
+analysis of accessions). `analysis_plot_names()` shows them before saving:
+
+```{r}
+head(analysis_plot_names(stage1, "AYT_2026_Ibadan_stage1", level = "plot"))
+```
+
+After saving, `breedbase_analysis_plots()` reads them back from Breedbase,
+with their accession, design and the values of every trait in the analysis.
+It works for any analysis you can see, also one saved earlier:
+
+```{r, eval = FALSE}
+saved_stocks <- breedbase_analysis_plots(con, "AYT_2026_Ibadan_stage1")
+head(saved_stocks)
+```
+
+Plots without any value (a lost plot, an outlier removed before the
+analysis) are not listed: Breedbase lists the plots of an analysis through
+their values.
+
 ## Add a second analyzed trait to an existing analysis
 
 Analyze the second trait on the same field plots. In this example the dry
@@ -1067,7 +1144,7 @@ matter measurements are simulated; replace them with your field data:
 set.seed(84)
 field$dry_matter <- 32 + rnorm(nrow(field), sd = 2)
 dm_fit <- analyze_augmented_row_column_design(field, "dry_matter")
-dm_stage1 <- first_stage_values(dm_fit, rc, trial_name = "AYT_2026_Ibadan",
+dm_stage1 <- first_stage_values(dm_fit, rc, trial_name = "AYT_2026_Ibadan", location = "Ibadan",
   trait = "dry matter content percentage")
 dm_stage2 <- second_stage_values(dm_fit, trait = "dry matter content percentage")
 head(dm_stage2)
@@ -1078,6 +1155,10 @@ same projects. Use `level = "plot"` for the first-stage plot analysis and
 `level = "accession"` for the genotype-means analysis:
 
 ```{r append-analyzed-trait, eval = FALSE}
+# The stocks of the saved analysis, and the values to add for them:
+stocks <- breedbase_analysis_plots(con, "AYT_2026_Ibadan_stage1")
+dm_stage1 <- dm_stage1[dm_stage1$plot_name %in% stocks$plot_name, ]
+
 add_breedbase_analysis_values(dm_stage1, con,
   analysis_name = "AYT_2026_Ibadan_stage1", level = "plot", dry_run = TRUE)
 add_breedbase_analysis_values(dm_stage1, con,

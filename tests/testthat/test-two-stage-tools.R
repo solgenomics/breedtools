@@ -100,7 +100,8 @@ test_that("two-stage analysis for augmented row-column, resolvable row-column an
   # With a row trend, the spatial stage 1 is at least as accurate as the design model.
   expect_gte(cor(ts$adjusted_means$adjusted_mean, sim$g[ts$adjusted_means$genotype]),
              cor(t1$adjusted_means$adjusted_mean, sim$g[t1$adjusted_means$genotype]) - 0.01)
-  v <- first_stage_values(ts$stage1_fits[["North"]], sim$designs[[1]], "AYT_North", trait = "fresh root yield")
+  v <- first_stage_values(ts$stage1_fits[["North"]], sim$designs[[1]], "AYT_North", trait = "fresh root yield",
+                          location = "North")
   expect_equal(nrow(v), 144)
   expect_false(anyNA(v$`fresh root yield`))
   expect_equal(attr(v, "method"), "spatial")

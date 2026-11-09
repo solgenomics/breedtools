@@ -264,21 +264,27 @@ check_reset(); check_design(rc); check_summary()
 |---|---|
 | `breedbase_login()` | Logs in to a Breedbase server through BrAPI |
 | `breedbase_programs()` / `breedbase_folders()` / `breedbase_locations()` | Lists breeding programs, trial folders and locations |
-| `breedbase_check()` | Checks the program, folder, location, accessions and trial name before you save |
+| `breedbase_check()` | Checks the program, folder, location, accessions, trial and plot names before you save, and says whether everything is READY |
+| `add_plot_names()` | Adds the Breedbase plot names to a design, to see, check or edit them before saving |
+| `add_plot_coordinates()` | Adds plot GPS coordinates, from the field corner and plot size, or one point per plot |
+| `save_breedbase_coordinates()` | Saves plot GPS coordinates to a trial already in Breedbase |
 | `prepare_breedbase_trial()` | Converts an agricolae design and records the trial information |
 | `as_breedbase_design()` | Converts an agricolae field book only (column mapping) |
-| `save_breedbase()` | Saves a design as a new trial with its plots (`dry_run = TRUE` previews it) |
+| `save_breedbase()` | Saves a design as a new trial with its plots and their GPS coordinates (`dry_run = TRUE` previews it) |
 | `breedbase_trial_plots()` | Reads the plots of a saved trial |
 | `phenotype_template()` | Makes a phenotyping sheet with the Breedbase plot names |
 
 ```r
 con <- breedbase_login("https://your-breedbase.org", "your_username")
 breedbase_programs(con)
-breedbase_check(con, accessions = rc, location = "Ibadan", program = "Cassava")
+rc <- add_plot_names(rc, "AYT_2026", location = "Ibadan")       # see rc$design$plot_name
+rc <- add_plot_coordinates(rc, origin = c(7.4931, 3.9035), plot_width = 3, plot_length = 5)
+breedbase_check(con, accessions = rc, location = "Ibadan", program = "Cassava",
+                trial_name = "AYT_2026")
 save_breedbase(rc, con, program = "Cassava", folder = "AYT 2026",
-               trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
+               trial_name = "AYT_2026", year = 2026, location = "Ibadan",
                description = "Advanced yield trial", dry_run = TRUE)
-phenotype_template(rc, trial_name = "AYT_2026_Ibadan", traits = "fresh root yield")
+phenotype_template(rc, traits = "fresh root yield")      # uses the stored plot names
 ```
 
 ### 8. Breedbase: phenotypes and analysis results
@@ -288,7 +294,9 @@ phenotype_template(rc, trial_name = "AYT_2026_Ibadan", traits = "fresh root yiel
 | `breedbase_phenotypes()` | Reads phenotypes of trials by trial and trait name |
 | `save_breedbase_phenotypes()` | Saves phenotypes by plot and trait name |
 | `save_breedbase_first_stage()` | Saves first-stage plot values as a trait of the field plots |
-| `save_breedbase_analysis()` | Saves second-stage genotype values as a Breedbase analysis |
+| `save_breedbase_analysis()` | Saves results as a Breedbase analysis, of plots (first stage) or accessions (second stage) |
+| `analysis_plot_names()` | Shows the plot and accession names an analysis will have, before saving |
+| `breedbase_analysis_plots()` | Reads the plots, accessions and values of an analysis already in Breedbase |
 | `add_breedbase_analysis_values()` | Adds another trait to an existing analysis |
 | `breedbase_statistics()` | Lists the statistic terms of the SGNSTAT ontology |
 | `breedbase_adjusted_trait()` | Finds or creates the trait used for adjusted values |

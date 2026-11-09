@@ -1,5 +1,27 @@
 # breedtools 0.1.0
 
+* Plot GPS coordinates: the new `add_plot_coordinates()` adds them to a
+  design, calculated from the GPS of the field corner, plot size, alleys and
+  field direction, or given per plot (vectors, or a table such as the
+  Breedbase GPS upload template). `save_breedbase()` saves them with the
+  plots (Breedbase stores them only through an update after the plots are
+  created, so they are sent just after and read back to check), and the
+  new `save_breedbase_coordinates()` adds them to a trial already saved.
+* Tests: the fake Breedbase server reads the login form again (the tests
+  of saving to Breedbase had stopped running).
+* Plot names can be made when the design is made: give
+  `augmented_row_column_design()`, `resolvable_row_column_design()` or
+  `augmented_prep_design()` a `trial_name` (and `location`), or call the new
+  `add_plot_names()`. They are stored in a `plot_name` column, which can be
+  edited, and are used by `save_breedbase()`, `phenotype_template()` and
+  `first_stage_values()`. `breedbase_check()` now also checks plot names
+  (free in the database, not repeated), and accepts a list of designs.
+* The default plot name pattern now includes the location:
+  `"{trial}_{location}_{accession}_{block}_{rep}"` (new field `{location}`).
+  For trials saved with the old default, pass
+  `plot_name_pattern = "{trial}_{accession}_{block}_{rep}"` to
+  `phenotype_template()` and `first_stage_values()`.
+
 * First CRAN release.
 * `design_options()`: the field dimensions are now `rows_in_field` and
   `cols_in_field`, the same names as in its result and in

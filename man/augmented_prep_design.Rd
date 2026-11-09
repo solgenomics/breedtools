@@ -22,7 +22,9 @@ augmented_prep_design(
   output_file = NULL,
   method = c("search", "alpha", "alpha2"),
   n_prep_per_block = NULL,
-  n_efficiency_candidates = 5
+  n_efficiency_candidates = 5,
+  trial_name = NULL,
+  plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 )
 }
 \arguments{
@@ -96,6 +98,16 @@ repeated within a block, connected locations, and no pair of entries
 sharing more than one block) to compare on the average efficiency factor;
 the one with the highest efficiency is returned. Use \code{1} to return the
 first optimal candidate. Efficiency is compared for up to 2000 entries.}
+
+\item{trial_name}{Optional Breedbase trial name. When given, a
+\code{plot_name} column with the plot names used by \code{\link[=save_breedbase]{save_breedbase()}} is
+added to the design (see \code{\link[=add_plot_names]{add_plot_names()}}), so the names can be
+checked with \code{\link[=breedbase_check]{breedbase_check()}} and changed before saving. For a
+multi-location design the location is added, one trial per location.}
+
+\item{plot_name_pattern}{Pattern for the plot names, as in
+\code{\link[=add_plot_names]{add_plot_names()}}. Used only with \code{trial_name}; \code{{location}} is the
+design location.}
 }
 \value{
 A list with design inputs, summary diagnostics, complete plot-level

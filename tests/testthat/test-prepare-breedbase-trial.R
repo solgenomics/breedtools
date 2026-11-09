@@ -47,7 +47,7 @@ test_that("prepared defaults can be overridden explicitly when saving", {
   expect_identical(payload$studies[[1]]$seasons, list("2027"))
   expect_identical(payload$studies[[1]]$studyType, "Preliminary Yield Trial")
   expect_identical(trial$trial$trial_name, "RCBD_2026")
-  sheet <- phenotype_template(trial, trial_name = "Another_2027")
+  sheet <- phenotype_template(trial, trial_name = "Another_2027", location = "Ubiaja")
   expect_identical(sheet$plot_name, vapply(payload$plots[[1]], `[[`, "", "observationUnitName"))
 })
 

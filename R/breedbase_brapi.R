@@ -235,9 +235,10 @@ breedbase_locations <- function(con) {
 #' [save_breedbase()] repeats the same checks before writing.
 #'
 #' @param con A connection from [breedbase_login()].
-#' @param accessions Entry and check names: a character vector, or a design
-#'   from [augmented_row_column_design()], [augmented_prep_design()] or
-#'   [resolvable_row_column_design()].
+#' @param accessions Entry and check names: a character vector, a design
+#'   from [augmented_row_column_design()], [augmented_prep_design()],
+#'   [resolvable_row_column_design()] or [as_breedbase_design()], or a list
+#'   of such designs (e.g. one per location).
 #' @param location Breedbase location name(s).
 #' @param program,folder Optional breeding program and folder (the folder is
 #'   optional for saving too: without it the trial goes directly in the
@@ -245,6 +246,16 @@ breedbase_locations <- function(con) {
 #' @param trial_name Optional trial name(s), e.g. one per location. A name
 #'   already used by a trial (with plots) is reported as
 #'   `"TAKEN"`: change it before saving.
+#' @param plot_names Optional plot names to check: a character vector, a
+#'   design, or a list of designs. By default the plot names stored in the
+#'   design(s) given in `accessions` are checked (see [add_plot_names()]).
+#'   A design without stored plot names gets the default names of
+#'   [save_breedbase()] for the check when it can be matched to one trial
+#'   name and location (one design and one `trial_name`, or a list of
+#'   designs and one trial name and location per design). Plot names must be unique in the whole
+#'   database: a name already used is reported as `"TAKEN"`, a name given to
+#'   two plots as `"REPEATED"`. To save with other names, change the
+#'   `plot_name` column of the design or use [add_plot_names()].
 #'
 #' @section Slow servers:
 #' Accessions are searched 25 names at a time, because Breedbase looks up
@@ -280,7 +291,7 @@ breedbase_locations <- function(con) {
 #'
 #' @export
 breedbase_check <- function(con, accessions = NULL, location = NULL, program = NULL, folder = NULL,
-                            trial_name = NULL) {
+                            trial_name = NULL, plot_names = NULL) {
   if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
   rows <- list()
   add <- function(what, name, status, suggestion = NA_character_) {
@@ -326,16 +337,82 @@ breedbase_check <- function(con, accessions = NULL, location = NULL, program = N
     rows[[length(rows) + 1]] <- tibble::tibble(what = "accession", name = acc$name, status = acc$status,
                                                suggestion = acc$suggestion)
   }
+  # Plot names: given, or from the design(s) given as accessions (a plain
+  # vector of accession names has no plot names).
+  plot_source <- if (!is.null(plot_names)) plot_names else
+    if (is.character(accessions) || is.factor(accessions)) NULL else accessions
+  plots_in <- bb_check_plot_input(plot_source, trial_name, location)
+  if (length(plots_in$names)) {
+    pn <- plots_in$names
+    for (d in unique(pn[duplicated(pn)])) add("plot", d, "REPEATED", "plot names must be unique: rename one of them")
+    taken <- bb_existing_plots(con, unique(pn))
+    rows[[length(rows) + 1]] <- tibble::tibble(
+      what = "plot", name = unique(pn), status = ifelse(unique(pn) %in% taken, "TAKEN", "OK"),
+      suggestion = ifelse(unique(pn) %in% taken,
+                          "a plot with this name is already in Breedbase: change the plot_name column or use add_plot_names()",
+                          NA_character_))
+  }
   out <- if (length(rows)) do.call(rbind, rows) else
     tibble::tibble(what = character(), name = character(), status = character(), suggestion = character())
-  bb_print_check(out)
+  bb_print_check(out, plots_in$unnamed)
   attr(out, "ok") <- all(out$status %in% c("OK", "NEW", "EMPTY"))
   invisible(out)
+}
+
+# Plot names to check: a character vector, or the plot names stored in a
+# design (or a list of designs). A design without plot names gets the
+# default names when it matches one trial name; otherwise it is counted as
+# unnamed. Filler plots are left out.
+bb_check_plot_input <- function(x, trial_name = NULL, location = NULL) {
+  none <- list(names = character(0), unnamed = 0L)
+  if (is.null(x)) return(none)
+  if (is.character(x) || is.factor(x)) {
+    x <- trimws(as.character(x))
+    return(list(names = bb_clean_name(x[!is.na(x) & nzchar(x)], "plot names"), unnamed = 0L))
+  }
+  designs <- if (bb_is_design(x)) list(x) else if (is.list(x) && length(x) && all(vapply(x, bb_is_design, logical(1)))) x else NULL
+  if (is.null(designs)) stop("`plot_names` must be a character vector, a design or a list of designs.", call. = FALSE)
+  out <- character(0)
+  unnamed <- 0L
+  for (i in seq_along(designs)) {
+    dz <- designs[[i]]
+    if (!"plot_name" %in% names(dz$design)) {
+      loc <- if (inherits(dz, "augmented_prep_design")) NULL else
+        if (length(location) == length(designs)) unname(location[i]) else
+        if (length(location) == 1) unname(location) else NULL
+      named <- if (length(trial_name) == length(designs)) {
+        tryCatch(suppressMessages(add_plot_names(dz, trial_name[i], location = loc)), error = function(e) NULL)
+      }
+      if (!is.null(named)) {
+        dz <- named
+      } else {
+        unnamed <- unnamed + 1L
+        next
+      }
+    }
+    d <- as.data.frame(dz$design, stringsAsFactors = FALSE)
+    if ("is_filler" %in% names(d)) d <- d[d$is_filler != 1, , drop = FALSE]
+    pn <- trimws(as.character(d$plot_name))
+    if (anyNA(pn) || any(!nzchar(pn))) {
+      stop("Some plots of the design have no plot name: fill the `plot_name` column or use add_plot_names().",
+           call. = FALSE)
+    }
+    out <- c(out, bb_clean_name(pn, "plot names"))
+  }
+  list(names = out, unnamed = unnamed)
+}
+
+bb_is_design <- function(x) {
+  inherits(x, c("augmented_row_column_design", "augmented_prep_design", "resolvable_row_column_design",
+                "breedbase_design"))
 }
 
 # Accession names from a vector or a design (filler plots are left out).
 bb_accession_names <- function(x) {
   if (is.character(x) || is.factor(x)) return(trimws(as.character(x)))
+  if (is.list(x) && is.null(x$design) && length(x) && all(vapply(x, bb_is_design, logical(1)))) {
+    return(unique(unlist(lapply(x, bb_accession_names))))
+  }
   if (is.list(x) && !is.null(x$design)) {
     d <- as.data.frame(x$design, stringsAsFactors = FALSE)
     if ("is_filler" %in% names(d)) d <- d[d$is_filler != 1, , drop = FALSE]
@@ -388,18 +465,22 @@ bb_check_accessions <- function(con, names) {
                  suggestion = unname(suggestion))
 }
 
-bb_print_check <- function(out) {
+bb_print_check <- function(out, unnamed = 0L) {
   for (w in unique(out$what)) {
     x <- out[out$what == w, , drop = FALSE]
     bad <- x[!x$status %in% c("OK", "NEW", "EMPTY"), , drop = FALSE]
     new <- x[x$status == "NEW", , drop = FALSE]
-    if (w == "accession" && nrow(x) > 3) {
+    if (w %in% c("accession", "plot") && nrow(x) > 3) {
       n_ok <- sum(x$status == "OK")
       n_names <- sum(x$status != "REPEATED")
       tag <- if (nrow(bad)) "[FIX]" else "[OK] "
-      cat("  ", tag, "  ", n_ok, " of ", n_names, " accessions are in Breedbase\n", sep = "")
+      what_ok <- if (w == "accession") " accessions are in Breedbase" else
+        paste0(" plot names are free, e.g. '", x$name[x$status == "OK"][1], "'")
+      if (w == "plot" && n_ok == 0) what_ok <- " plot names are free"
+      cat("  ", tag, "  ", n_ok, " of ", n_names, what_ok, "\n", sep = "")
     } else {
-      ok_note <- switch(w, folder = " exists: the trial will be saved inside it", trial = " is free", "")
+      ok_note <- switch(w, folder = " exists: the trial will be saved inside it", trial = " is free",
+                        plot = " is free", "")
       for (i in seq_len(nrow(x))) if (x$status[i] == "OK") cat("  [OK]   ", w, " '", x$name[i], "'", ok_note, "\n", sep = "")
     }
     for (i in which(x$status == "EMPTY")) cat("  [NOTE] ", w, " '", x$name[i], "' ", x$suggestion[i], "\n", sep = "")
@@ -415,11 +496,32 @@ bb_print_check <- function(out) {
     }
     if (nrow(bad) > length(shown)) cat("         ... and ", nrow(bad) - length(shown), " more\n", sep = "")
   }
-  n_bad <- sum(!out$status %in% c("OK", "NEW", "EMPTY"))
-  if (n_bad == 0) {
-    cat("All names are ready in Breedbase.\n")
+  if (unnamed > 0) {
+    cat("  [NOTE] ", unnamed, " design", if (unnamed > 1) "s have" else " has",
+        " no plot names yet, so their plot names were not checked: give one design per trial ",
+        "(with its trial_name and location), or add them with add_plot_names(design, trial_name, location)\n",
+        sep = "")
+  }
+  # What was checked, e.g. "1 program, 3 locations, 112 accessions, 162 plot names".
+  labels <- c(program = "program", folder = "folder", location = "location", accession = "accession",
+              trial = "trial name", plot = "plot name")
+  counts <- vapply(names(labels), function(w) length(unique(out$name[out$what == w])), integer(1))
+  checked <- paste0(counts, " ", labels, ifelse(counts > 1, "s", ""))[counts > 0]
+  if (any(out$what == "folder" & out$status == "NEW")) checked[names(labels)[counts > 0] == "folder"] <- "1 new folder"
+  if (unnamed > 0) checked <- c(checked, "plot names NOT checked")
+  checked <- paste(checked, collapse = ", ")
+  bad <- out[!out$status %in% c("OK", "NEW", "EMPTY"), , drop = FALSE]
+  cat("\n")
+  if (nrow(bad) == 0) {
+    cat("READY: everything checked can be saved to Breedbase (", checked, ").\n", sep = "")
+    cat("Next: save_breedbase(..., dry_run = TRUE) for a last check, then without dry_run to save.\n")
   } else {
-    cat(n_bad, " name", if (n_bad > 1) "s need" else " needs", " fixing before saving.\n", sep = "")
+    per <- table(factor(bad$what, levels = names(labels)))
+    per <- per[per > 0]
+    what_bad <- paste0(per, " ", labels[names(per)], ifelse(per > 1, "s", ""), collapse = ", ")
+    cat("NOT READY: fix ", nrow(bad), " problem", if (nrow(bad) > 1) "s" else "", " (", what_bad,
+        ", marked [FIX] above) and run breedbase_check() again.\n", sep = "")
+    cat("Checked: ", checked, ".\n", sep = "")
   }
 }
 
@@ -438,7 +540,12 @@ bb_print_check <- function(out) {
 #' After saving, the plots are read back from Breedbase to verify the upload.
 #'
 #' Each plot is saved with its name, plot number, row and column, rep, block
-#' and whether it is a check. Plot names are made automatically from the
+#' and whether it is a check, and its GPS coordinates when the design has
+#' them (see [add_plot_coordinates()]; they are sent just after the plots
+#' and read back to check). Plot names stored in the design (a `plot_name`
+#' column, made by the design functions when given a `trial_name` or by
+#' [add_plot_names()]) are used as they are, so they can be reviewed and
+#' changed before saving. Otherwise they are made automatically from the
 #' trial name, accession, block and rep (see `plot_name_pattern`), or you can
 #' give your own with `plot_names`. Plot names must be unique in the whole
 #' database, which is checked before saving. A multi-location p-rep design becomes one Breedbase
@@ -486,10 +593,13 @@ bb_print_check <- function(out) {
 #'   the name of a column of `design$design` that holds them. Names must be
 #'   unique.
 #' @param plot_name_pattern Pattern for automatic plot names, used when
-#'   `plot_names` is `NULL`. The default `"{trial}_{accession}_{block}_{rep}"`
-#'   gives names like `"AYT_2026_LINE_007_3_1"`. Available fields: `{trial}`
-#'   (the Breedbase trial name), `{accession}`, `{block}`, `{rep}`, `{plot}`
-#'   (plot number), `{row}` and `{col}`. If a pattern gives the same name to
+#'   `plot_names` is `NULL`. With `NULL` (the default) the `plot_name`
+#'   column of the design is used when it has one, and otherwise the pattern
+#'   `"{trial}_{location}_{accession}_{block}_{rep}"`, which gives names like
+#'   `"AYT_2026_Ibadan_LINE_007_3_1"`. Available fields: `{trial}` (the
+#'   Breedbase trial name), `{location}` (the Breedbase location, with spaces
+#'   and special characters replaced by `"_"`), `{accession}`, `{block}`,
+#'   `{rep}`, `{plot}` (plot number), `{row}` and `{col}`. If a pattern gives the same name to
 #'   two plots (the same accession twice in one block and rep), the plot
 #'   number is added to those names.
 #' @param create_folder Logical. Create `folder` if it does not exist.
@@ -499,8 +609,9 @@ bb_print_check <- function(out) {
 #'   sessions).
 #'
 #' @return Invisibly, a tibble with one row per Breedbase trial: location,
-#'   trial name, trial id, number of plots sent and found after saving, and
-#'   the address of the trial page. With `dry_run = TRUE` and no connection,
+#'   trial name, trial id, number of plots sent and found after saving,
+#'   number of plots with GPS coordinates sent and found, and the address of
+#'   the trial page. With `dry_run = TRUE` and no connection,
 #'   a list with the trial and plot data that would be sent.
 #'
 #' @seealso [breedbase_login()], [breedbase_programs()]
@@ -531,7 +642,7 @@ bb_print_check <- function(out) {
 save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, trial_name, year,
                            location = NULL, description, trial_type = "phenotyping_trial",
                            design_type = NULL, plot_names = NULL,
-                           plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
+                           plot_name_pattern = NULL,
                            create_folder = FALSE, dry_run = FALSE, confirm = interactive()) {
   if (inherits(design, "breedbase_trial")) {
     metadata <- design$trial
@@ -654,10 +765,15 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
   taken <- bb_existing_plots(con, plot_names_all)
   if (length(taken) > 0) {
     stop(length(taken), " plot names already exist in Breedbase (plot names must be unique in the database), e.g. ",
-         paste(utils::head(taken, 5), collapse = ", "), ". Use another `trial_name` or `plot_name_pattern`.",
+         paste(utils::head(taken, 5), collapse = ", "), ". Use another `trial_name` or `plot_name_pattern`, or change the plot names with ",
+         "add_plot_names() or in the design's `plot_name` column.",
          call. = FALSE)
   }
   cat("  [OK]   all ", length(plot_names_all), " plot names are new, e.g. ", plot_names_all[1], "\n", sep = "")
+  n_geo <- sum(vapply(studies, function(s) length(bb_study_geo(s)), integer(1)))
+  if (n_geo) {
+    cat("  [OK]   GPS coordinates of ", n_geo, " plots will be saved after the plots\n", sep = "")
+  }
 
   n_plots <- sum(vapply(studies, function(s) length(s$plots), integer(1)))
   where <- if (is.null(folder)) sprintf("directly in program '%s'", prog$program) else
@@ -672,6 +788,8 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
       trial_db_id = NA_character_,
       plots_sent = vapply(studies, function(s) length(s$plots), integer(1)),
       plots_found = NA_integer_,
+      plots_with_gps = vapply(studies, function(s) length(bb_study_geo(s)), integer(1)),
+      gps_found = NA_integer_,
       trial_page = NA_character_
     )))
   }
@@ -714,12 +832,16 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
     n_found <- bb_count_plots(con, study_id)
     status <- if (n_found == length(plots)) "[OK]  " else "[FAIL]"
     cat(sprintf("  %s trial '%s' saved with %d of %d plots\n", status, s$study$studyName, n_found, length(plots)))
+    geo <- bb_study_geo(s)
+    gps_found <- if (length(geo)) bb_save_plot_geo(con, study_id, geo, s$study$studyName) else NA_integer_
     out[[i]] <- tibble::tibble(
       location = s$breedbase_location,
       trial_name = s$study$studyName,
       trial_db_id = study_id,
       plots_sent = length(plots),
       plots_found = n_found,
+      plots_with_gps = length(geo),
+      gps_found = gps_found,
       trial_page = paste0(con$url, "/breeders/trial/", study_id)
     )
   }
@@ -1079,17 +1201,90 @@ bb_clean_name <- function(x, what = "name", quiet = FALSE) {
   out
 }
 
+bb_default_plot_pattern <- "{trial}_{location}_{accession}_{block}_{rep}"
+
+#' Add Breedbase plot names to a design
+#'
+#' Adds a `plot_name` column to `design$design` with the names the plots
+#' will have in Breedbase, so they can be seen, checked with
+#' [breedbase_check()] and changed before [save_breedbase()]. The design
+#' functions call this when given a `trial_name`. Run it again to make the
+#' names for another trial name or pattern, or edit the column by hand: any
+#' unique names are accepted. [save_breedbase()], [phenotype_template()] and
+#' [first_stage_values()] use the stored names.
+#'
+#' @param design A design from [augmented_row_column_design()],
+#'   [augmented_prep_design()], [resolvable_row_column_design()],
+#'   [as_breedbase_design()] or [prepare_breedbase_trial()].
+#' @param trial_name The Breedbase trial name. For a multi-location p-rep
+#'   design, the location is added as in [save_breedbase()] (one trial per
+#'   location). Can be omitted for a prepared Breedbase trial.
+#' @param location The Breedbase location of the trial, used by the
+#'   `{location}` field of the pattern. Not needed for p-rep designs (their
+#'   own locations are used, or give a named vector mapping them to
+#'   Breedbase locations, as in [save_breedbase()]) or for a prepared
+#'   Breedbase trial (its recorded location is used).
+#' @param plot_name_pattern Pattern for the names, as in [save_breedbase()]:
+#'   fields `{trial}`, `{location}`, `{accession}`, `{block}`, `{rep}`,
+#'   `{plot}`, `{row}` and `{col}`.
+#' @param plot_names Optional names given by you instead of a pattern: one
+#'   per row of `design$design`, or the name of a column holding them.
+#'
+#' @return The design with a `plot_name` column (`NA` for filler plots,
+#'   which are not saved) and the trial name in `plot_name_trial`.
+#'
+#' @examples
+#' rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
+#'                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
+#' rc <- add_plot_names(rc, "AYT_2026", location = "Ibadan")
+#' head(rc$design$plot_name)
+#' # Other names, e.g. with the field position:
+#' rc <- add_plot_names(rc, "AYT_2026_Ibadan", plot_name_pattern = "{trial}_{plot}_r{row}c{col}")
+#' head(rc$design$plot_name)
+#'
+#' @export
+add_plot_names <- function(design, trial_name = NULL, location = NULL,
+                           plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}", plot_names = NULL) {
+  if (is.null(trial_name) && inherits(design, "breedbase_trial")) trial_name <- design$trial$trial_name
+  if (is.null(trial_name) || length(trial_name) != 1 || is.na(trial_name) || !nzchar(trimws(trial_name))) {
+    stop("Give one `trial_name` for the plot names.", call. = FALSE)
+  }
+  if (!bb_is_design(design)) {
+    stop("`design` must come from augmented_row_column_design(), augmented_prep_design(), ",
+         "resolvable_row_column_design() or as_breedbase_design().", call. = FALSE)
+  }
+  if (is.null(plot_names) && is.null(plot_name_pattern)) plot_name_pattern <- bb_default_plot_pattern
+  trial_name <- bb_clean_name(trial_name, "trial name")
+  tab <- bb_design_plot_table(design, trial_name, plot_name_pattern, plot_names, location = location)
+  d <- design$design
+  is_prep <- inherits(design, "augmented_prep_design")
+  key_d <- paste(if (is_prep) as.character(d$location) else "", d$plots, sep = "\r")
+  key_t <- paste(if (is_prep) tab$.design_location else "", tab$.design_plots, sep = "\r")
+  d$plot_name <- tab$plot_name[match(key_d, key_t)]
+  design$design <- d
+  design$plot_name_trial <- trial_name
+  design
+}
+
 # Convert a design into BrAPI study and observation unit records (without
 # database ids, which are filled in when saving).
-# Plot names from a pattern such as "{trial}_{accession}_{block}_{rep}".
+# Plot names from a pattern such as "{trial}_{location}_{accession}_{block}_{rep}".
 # Names that come out the same get the plot number added.
-bb_plot_names <- function(pattern, trial, accession, block, rep, plot, row, col) {
-  fields <- list(trial = trial, accession = accession, block = block, rep = rep, plot = plot, row = row, col = col)
+bb_plot_names <- function(pattern, trial, accession, block, rep, plot, row, col, location = NA) {
+  fields <- list(trial = trial, location = location, accession = accession, block = block, rep = rep,
+                 plot = plot, row = row, col = col)
   used <- regmatches(pattern, gregexpr("\\{[a-z]+\\}", pattern))[[1]]
   unknown <- setdiff(gsub("[{}]", "", used), names(fields))
   if (length(unknown) > 0) {
     stop("Unknown field(s) in `plot_name_pattern`: ", paste0("{", unknown, "}", collapse = ", "),
-         ". Use {trial}, {accession}, {block}, {rep}, {plot}, {row} or {col}.", call. = FALSE)
+         ". Use {trial}, {location}, {accession}, {block}, {rep}, {plot}, {row} or {col}.", call. = FALSE)
+  }
+  if ("{location}" %in% used) {
+    if (anyNA(location) || identical(location, bb_no_location)) {
+      stop("`plot_name_pattern` uses {location}: give the Breedbase `location` of the trial, ",
+           "or use a pattern without {location}.", call. = FALSE)
+    }
+    fields$location <- bb_clean_name(location, "location in plot names", quiet = TRUE)
   }
   n <- length(accession)
   out <- rep(pattern, n)
@@ -1107,8 +1302,8 @@ bb_plot_names <- function(pattern, trial, accession, block, rep, plot, row, col)
 }
 
 bb_design_to_studies <- function(design, trial_name, year, location, description, trial_type, design_type,
-                                 plot_names = NULL, plot_name_pattern = "{trial}_{accession}_{block}_{rep}") {
-  if (missing(trial_name) || !nzchar(trial_name)) stop("Give a `trial_name`.", call. = FALSE)
+                                 plot_names = NULL, plot_name_pattern = NULL) {
+  if (missing(trial_name) || is.null(trial_name) || !nzchar(trial_name)) stop("Give a `trial_name`.", call. = FALSE)
   if (missing(year)) stop("Give the `year` of the trial.", call. = FALSE)
   trial_name <- bb_clean_name(trial_name, "trial name")
   kind <- if (inherits(design, "augmented_row_column_design")) {
@@ -1132,6 +1327,20 @@ bb_design_to_studies <- function(design, trial_name, year, location, description
          call. = FALSE)
   }
   d <- as.data.frame(design$design, stringsAsFactors = FALSE)
+  # Plot names stored in the design are used unless other names or a
+  # pattern are given.
+  if (is.null(plot_names) && is.null(plot_name_pattern)) {
+    if ("plot_name" %in% names(d)) {
+      plot_names <- "plot_name"
+      named_for <- design$plot_name_trial
+      if (!is.null(named_for) && !identical(named_for, trial_name)) {
+        message("The plot names in the design were made for trial '", named_for, "', not '", trial_name,
+                "'; they are used as they are. Use add_plot_names() to make them again.")
+      }
+    } else {
+      plot_name_pattern <- bb_default_plot_pattern
+    }
+  }
   # User-given plot names: a vector in row order, or a column of the design.
   if (!is.null(plot_names)) {
     if (length(plot_names) == 1 && plot_names %in% names(d)) {
@@ -1195,7 +1404,8 @@ bb_design_to_studies <- function(design, trial_name, year, location, description
     unit_names <- if (!is.null(x$.plot_name)) {
       x$.plot_name
     } else {
-      bb_plot_names(plot_name_pattern, trial = g$name, accession = as.character(x$all_entries),
+      bb_plot_names(plot_name_pattern, trial = g$name, location = g$breedbase_location %||% NA,
+                    accession = as.character(x$all_entries),
                     block = block_no, rep = rep_no, plot = plot_number,
                     row = if (has_coords) x$row else NA, col = if (has_coords) x$col else NA)
     }
@@ -1219,6 +1429,10 @@ bb_design_to_studies <- function(design, trial_name, year, location, description
         position$positionCoordinateY <- as.character(x$row[i])
         position$positionCoordinateYType <- "GRID_ROW"
       }
+      # GPS (see add_plot_coordinates()). Breedbase ignores it when the plots
+      # are created; save_breedbase() sends it after, with PUT.
+      geo <- bb_plot_geojson(x[i, , drop = FALSE])
+      if (!is.null(geo)) position$geoCoordinates <- geo
       list(
         observationUnitName = unit_names[i],
         germplasmName = as.character(x$all_entries[i]),

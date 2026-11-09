@@ -9,9 +9,10 @@ first_stage_values(
   design = NULL,
   trial_name = NULL,
   trait = NULL,
-  plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
+  plot_name_pattern = NULL,
   plot_names = NULL,
-  breedbase_plots = NULL
+  breedbase_plots = NULL,
+  location = NULL
 )
 }
 \arguments{
@@ -30,7 +31,10 @@ without a design).}
 
 \item{trait}{Trait name when \code{fits} is a single analysis.}
 
-\item{plot_name_pattern, plot_names}{The plot naming used in \code{\link[=save_breedbase]{save_breedbase()}}.}
+\item{plot_name_pattern, plot_names, location}{The plot naming used in
+\code{\link[=save_breedbase]{save_breedbase()}}; \code{location} is the Breedbase location of the trial,
+needed for the \code{{location}} field when the design has no stored plot
+names.}
 
 \item{breedbase_plots}{Optional plots of the saved trial, from
 \code{\link[=breedbase_trial_plots]{breedbase_trial_plots()}}. The design is then checked against the saved
@@ -59,7 +63,8 @@ d <- rc$design
 set.seed(1)
 d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 fit <- analyze_augmented_row_column_design(d, "yield")
-values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+                            location = "Ibadan")
 head(values)
 
 }

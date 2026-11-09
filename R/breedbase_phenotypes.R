@@ -18,11 +18,16 @@
 #'   [as_breedbase_design()] or [prepare_breedbase_trial()].
 #' @param trial_name The trial name used when saving the design. For p-rep
 #'   designs saved as one trial per location, the location is added as in
-#'   [save_breedbase()]. Can be omitted for a prepared Breedbase trial.
+#'   [save_breedbase()]. Can be omitted for a prepared Breedbase trial or a
+#'   design with plot names (see [add_plot_names()]).
 #' @param traits Trait names as in Breedbase, e.g. `"fresh root yield"` or
 #'   `"fresh root yield|CO_334:0000013"`. Can be empty (no trait columns).
 #' @param plot_name_pattern,plot_names The same plot naming used in
-#'   [save_breedbase()].
+#'   [save_breedbase()]. By default the plot names stored in the design are
+#'   used, when it has them.
+#' @param location The Breedbase location of the trial, needed when the
+#'   plot names are made here with the `{location}` field (the default
+#'   pattern) and the design has no stored plot names.
 #'
 #' @return A tibble: `plot_name`, `trial_name`, `accession`, `plot_number`,
 #'   `block`, `rep`, `row`, `col`, `is_check` and one column per trait.
@@ -30,15 +35,15 @@
 #' @examples
 #' rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
 #'                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
-#' sheet <- phenotype_template(rc, "AYT_2026_Ibadan",
+#' sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan",
 #'                             traits = c("fresh root yield", "dry matter content percentage"))
 #' head(sheet)
 #'
 #' @export
 phenotype_template <- function(design, trial_name, traits = character(0),
-                               plot_name_pattern = "{trial}_{accession}_{block}_{rep}", plot_names = NULL) {
-  if (missing(trial_name) && inherits(design, "breedbase_trial")) trial_name <- design$trial$trial_name
-  out <- bb_design_plot_table(design, trial_name, plot_name_pattern, plot_names)
+                               plot_name_pattern = NULL, plot_names = NULL, location = NULL) {
+  if (missing(trial_name)) trial_name <- NULL
+  out <- bb_design_plot_table(design, trial_name, plot_name_pattern, plot_names, location = location)
   out$.design_location <- NULL
   out$.design_plots <- NULL
   for (t in unique(as.character(traits))) out[[t]] <- NA_real_
@@ -47,10 +52,11 @@ phenotype_template <- function(design, trial_name, traits = character(0),
 
 # Breedbase plot names of a design with the design's own plot number (and
 # location for p-rep designs), to match analysis results.
-bb_design_plot_table <- function(design, trial_name, plot_name_pattern = "{trial}_{accession}_{block}_{rep}",
-                                 plot_names = NULL) {
+bb_design_plot_table <- function(design, trial_name, plot_name_pattern = NULL,
+                                 plot_names = NULL, location = NULL) {
   if (is.null(trial_name) && inherits(design, "breedbase_trial")) trial_name <- design$trial$trial_name
-  studies <- bb_design_to_studies(design, trial_name, year = 2000, location = bb_template_location(design),
+  if (is.null(trial_name)) trial_name <- design$plot_name_trial
+  studies <- bb_design_to_studies(design, trial_name, year = 2000, location = bb_template_location(design, location),
                                   description = "template", trial_type = "phenotyping_trial", design_type = NULL,
                                   plot_names = plot_names, plot_name_pattern = plot_name_pattern)
   rows <- lapply(studies, function(s) {
@@ -88,9 +94,17 @@ bb_design_plot_table <- function(design, trial_name, plot_name_pattern = "{trial
 
 # The template only needs the location names of p-rep designs (to name the
 # trials per location); other designs need a placeholder.
-bb_template_location <- function(design) {
-  if (inherits(design, "augmented_prep_design")) NULL else "template"
+bb_template_location <- function(design, location = NULL) {
+  if (!is.null(location)) return(location)
+  if (inherits(design, "augmented_prep_design")) return(NULL)
+  if (inherits(design, "breedbase_trial") && !is.null(design$trial$location)) return(design$trial$location)
+  bb_no_location
 }
+
+# Placeholder location for templates of designs saved without a known
+# location: a {location} field in the plot name pattern asks for it.
+bb_no_location <- ".breedtools_no_location."
+
 
 #' Save phenotypic data to Breedbase
 #'
@@ -168,7 +182,7 @@ bb_template_location <- function(design) {
 #' @examples
 #' rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
 #'                                   12, 12, 4, 4, n_candidates = 5, seed = 1)
-#' sheet <- phenotype_template(rc, "AYT_2026_Ibadan", traits = "fresh root yield")
+#' sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = "fresh root yield")
 #' sheet$`fresh root yield` <- round(rnorm(nrow(sheet), 25, 4), 1)
 #'
 #' # What would be sent (no connection needed):

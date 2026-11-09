@@ -79,7 +79,8 @@ d <- rc$design
 set.seed(1)
 d$yield <- 25 + 0.4 * d$row + rnorm(nrow(d), sd = 2)
 fit <- analyze_augmented_row_column_design(d, "yield")
-values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield")
+values <- first_stage_values(fit, rc, "AYT_2026_Ibadan", trait = "fresh root yield",
+                            location = "Ibadan")
 obs <- save_breedbase_first_stage(values, dry_run = TRUE)
 head(obs)
 

@@ -123,6 +123,14 @@ augmented_row_column_capacity <- function(
 #' @param seed Optional random seed.
 #' @param output_file Optional path for writing the complete design as a
 #'   tab-delimited file.
+#' @param trial_name Optional Breedbase trial name. When given, a
+#'   `plot_name` column with the plot names used by [save_breedbase()] is
+#'   added to the design (see [add_plot_names()]), so the names can be
+#'   checked with [breedbase_check()] and changed before saving.
+#' @param location Breedbase location of the trial, for the `{location}`
+#'   field of the plot names. Used only with `trial_name`.
+#' @param plot_name_pattern Pattern for the plot names, as in
+#'   [add_plot_names()]. Used only with `trial_name`.
 #' @param rows_per_rowgroup,cols_per_colgroup Optional vectors of unequal
 #'   group sizes, as in [augmented_row_column_capacity()].
 #' @param checks_per_block Optional number of check plots per block, as in
@@ -195,7 +203,10 @@ augmented_row_column_design <- function(
     rows_per_rowgroup = NULL,
     cols_per_colgroup = NULL,
     checks_per_block = NULL,
-    method = c("auto", "latin", "optimal")
+    method = c("auto", "latin", "optimal"),
+    trial_name = NULL,
+    location = NULL,
+    plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 ) {
   plot_type <- match.arg(plot_type)
   method <- match.arg(method)
@@ -348,10 +359,11 @@ augmented_row_column_design <- function(
   )
 
   class(result) <- c("augmented_row_column_design", class(result))
+  if (!is.null(trial_name)) result <- add_plot_names(result, trial_name, location, plot_name_pattern)
 
   if (!is.null(output_file)) {
     utils::write.table(
-      design,
+      result$design,
       file = output_file,
       quote = FALSE,
       sep = "\t",

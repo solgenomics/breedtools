@@ -53,6 +53,14 @@
 #' @param plot_type Plot numbering order: `"serpentine"` or `"cartesian"`.
 #' @param seed Optional random seed.
 #' @param output_file Optional tab-delimited output file for the design.
+#' @param trial_name Optional Breedbase trial name. When given, a
+#'   `plot_name` column with the plot names used by [save_breedbase()] is
+#'   added to the design (see [add_plot_names()]), so the names can be
+#'   checked with [breedbase_check()] and changed before saving.
+#' @param location Breedbase location of the trial, for the `{location}`
+#'   field of the plot names. Used only with `trial_name`.
+#' @param plot_name_pattern Pattern for the plot names, as in
+#'   [add_plot_names()]. Used only with `trial_name`.
 #' @param start_design Optional existing design to start from (for example
 #'   one produced by CycDesigN), as a data frame with `replicate`,
 #'   `row_in_rep`, `col_in_rep` and `all_entries` columns and complete
@@ -107,7 +115,10 @@ resolvable_row_column_design <- function(
     plot_type = c("serpentine", "cartesian"),
     seed = NULL,
     output_file = NULL,
-    start_design = NULL
+    start_design = NULL,
+    trial_name = NULL,
+    location = NULL,
+    plot_name_pattern = "{trial}_{location}_{accession}_{block}_{rep}"
 ) {
   replicate_layout <- match.arg(replicate_layout)
   plot_type <- match.arg(plot_type)
@@ -228,8 +239,9 @@ resolvable_row_column_design <- function(
     efficiency = efficiency
   )
   class(result) <- c("resolvable_row_column_design", class(result))
+  if (!is.null(trial_name)) result <- add_plot_names(result, trial_name, location, plot_name_pattern)
   if (!is.null(output_file)) {
-    utils::write.table(design, output_file, quote = FALSE, sep = "\t", row.names = FALSE)
+    utils::write.table(result$design, output_file, quote = FALSE, sep = "\t", row.names = FALSE)
   }
   result
 }

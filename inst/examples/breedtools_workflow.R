@@ -550,7 +550,7 @@ if (save_to_breedbase) {
 # and trait name (the trait name as in Breedbase, e.g. "fresh root yield").
 
 # Step 1. A sheet with the plot names of the trial and one empty column per trait.
-pheno_sheet <- phenotype_template(rc, trial_name = my_trial_name,
+pheno_sheet <- phenotype_template(rc, trial_name = my_trial_name, location = my_location,
                                   traits = c("fresh root yield", "dry matter content percentage"))
 print(head(pheno_sheet))
 write.csv(pheno_sheet, file.path(out_dir, "phenotyping_sheet.csv"), row.names = FALSE)
@@ -604,7 +604,7 @@ field$yield <- pheno_sheet$`fresh root yield`[match(field$plots, pheno_sheet$plo
 use_spats <- requireNamespace("SpATS", quietly = TRUE)
 fit_yield <- analyze_augmented_row_column_design(field, "yield", spatial = use_spats)
 
-stage1 <- first_stage_values(fit_yield, rc, trial_name = my_trial_name, trait = "fresh root yield")
+stage1 <- first_stage_values(fit_yield, rc, trial_name = my_trial_name, location = my_location, trait = "fresh root yield")
 print(head(stage1))
 check_result("first stage: one value per field plot", nrow(stage1) == nrow(rc$design))
 
