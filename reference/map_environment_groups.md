@@ -15,7 +15,7 @@ map_environment_groups(
   ungrouped_color = "#7A7A7A",
   match_by = "location",
   strict = TRUE,
-  tiles = "breedbase"
+  tiles = "open"
 )
 ```
 
@@ -62,15 +62,17 @@ map_environment_groups(
 
 - tiles:
 
-  Background map. The default, `"breedbase"`, uses the same maps as the
-  'Breedbase' Locations page: Esri Street (shown first), Topographical
-  and Satellite, with a switch in the top-right corner. They need no
-  account or API key and work in the RStudio viewer and in saved HTML
-  files. `"street"`, `"topo"` or `"satellite"` shows only that map.
-  `"OpenStreetMap"` uses OpenStreetMap's own tiles (these may be refused
-  outside a website). Any other value is passed to
+  Background map. All maps are open: free to use, with no account, API
+  key or commercial service. The default, `"open"`, offers three maps
+  with a switch in the top-right corner: Street (OpenStreetMap, shown
+  first), Topographical (OpenTopoMap) and Satellite (Sentinel-2
+  cloudless 2016 by EOX, from Copernicus Sentinel data). `"street"`,
+  `"topo"` or `"satellite"` shows only that map. They work in the
+  RStudio viewer and in saved HTML files; an internet connection is
+  needed to load them. Any other value is passed to
   [`leaflet::addProviderTiles()`](https://rstudio.github.io/leaflet/reference/addProviderTiles.html)
-  as a provider name; some commercial providers need an API key.
+  as a provider name; check that provider's terms, as some need an API
+  key.
 
 ## Value
 

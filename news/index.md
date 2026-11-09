@@ -471,11 +471,12 @@
   in Table 3 of the paper).
 
 - [`map_environment_groups()`](https://solgenomics.github.io/breedtools/reference/map_environment_groups.md)
-  now uses the same maps as the ‘Breedbase’ Locations page by default
-  (`tiles = "breedbase"`): Esri Street, Topographical and Satellite,
-  with a switch between them. They need no account or API key and work
-  in the RStudio viewer. `tiles` can also be `"street"`, `"topo"`,
-  `"satellite"`, `"OpenStreetMap"` or a leaflet provider name.
+  uses open background maps by default (`tiles = "open"`): Street
+  (OpenStreetMap), Topographical (OpenTopoMap) and Satellite (Sentinel-2
+  cloudless 2016 by EOX), with a switch between them. They need no
+  account, API key or commercial service and work in the RStudio viewer.
+  `tiles` can also be `"street"`, `"topo"`, `"satellite"` or a leaflet
+  provider name; `"breedbase"` and `"OpenStreetMap"` still work.
 
 - [`plot_augmented_prep_design()`](https://solgenomics.github.io/breedtools/reference/plot_augmented_prep_design.md)
   draws clearer maps: entries repeated at the location in orange with
