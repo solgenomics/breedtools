@@ -801,8 +801,9 @@ function for a tab-delimited copy of the full design.
 The workflow has three steps: generate your design with `agricolae`,
 prepare it with `prepare_breedbase_trial()`, then save it with the existing
 `save_breedbase()` function. Here is an RCBD (randomized complete block
-design), with three complete blocks. The same preparation function also
-accepts CRD, alpha and other supported agricolae designs.
+design), with three complete blocks. The same steps work for the other
+agricolae designs: see [Which agricolae designs work?](#which-agricolae-designs-work)
+below.
 
 Install `agricolae` with `install.packages("agricolae")` to run this example.
 The treatment column in the agricolae field book takes the name of the vector passed
@@ -854,7 +855,11 @@ your database. Log in, check those names and save the new trial:
 
 ```{r agricolae-save, eval = FALSE}
 con <- breedbase_login("https://your-breedbase.org", "your_username")
-save_breedbase(ag_design, con, dry_run = TRUE)  # check names in Breedbase
+ag_design <- add_plot_names(ag_design)          # see the plot names: ag_design$design$plot_name
+breedbase_check(con, accessions = ag_design, plot_names = ag_design,
+                location = ag_design$trial$location, program = ag_design$trial$program,
+                trial_name = ag_design$trial$trial_name)   # READY or NOT READY
+save_breedbase(ag_design, con, dry_run = TRUE)  # the last check, nothing written
 ag_saved <- save_breedbase(ag_design, con)     # create trial and plots
 ag_saved$trial_page
 ```
@@ -880,6 +885,56 @@ factors or recreate a main-plot/subplot hierarchy. Repeated main-plot
 numbers in split-plot books become unique sequential subplot numbers.
 Coordinates are uploaded only when supplied in the field book; they are
 not inferred from plot numbering or a sketch.
+
+### Which agricolae designs work?
+
+All the common agricolae designs go through the same steps
+(`prepare_breedbase_trial()`, `add_plot_names()`, `breedbase_check()`,
+`save_breedbase()`, `phenotype_template()`). Some need one more argument:
+
+| agricolae function | Breedbase design type | What you add |
+|---|---|---|
+| `design.crd()`, `design.rcbd()`, `design.alpha()`, `design.lattice()`, `design.dau()` (augmented blocks) | detected automatically | nothing |
+| `design.split()`, `design.strip()` | `splitplot`, `stripplot` (automatic) | `accession = "..."`: the column with the accession names |
+| `design.ab()` (factorial) | its CRD or RCBD (automatic) | `accession = "..."`: the factor that holds the accessions |
+| `design.lsd()` (Latin square), `design.youden()`, `design.bib()`, `design.cyclic()` | no direct Breedbase type | `design_type = "RCBD"` (or another type your Breedbase accepts) |
+| `design.graeco()` | no direct Breedbase type | `design_type = "..."` and `accession = "..."` |
+
+For example, a Latin square and a split plot:
+
+```{r agricolae-more, eval = requireNamespace("agricolae", quietly = TRUE)}
+lsd_entries <- c("G1", "G2", "G3", "G4", "G5")
+lsd <- prepare_breedbase_trial(agricolae::design.lsd(lsd_entries, seed = 1),
+  trial_name = "LSD_2026_Ibadan", year = 2026, location = "Ibadan", program = "IITA",
+  description = "Latin square from agricolae", design_type = "RCBD", prompt = FALSE)
+head(lsd$design[, c("plots", "all_entries", "block", "row", "col")])
+
+fertilizer <- c("low", "high")
+genotypes  <- c("G1", "G2", "G3", "G4")
+sp <- prepare_breedbase_trial(agricolae::design.split(fertilizer, genotypes, r = 2, seed = 1),
+  trial_name = "SPLIT_2026_Ibadan", year = 2026, location = "Ibadan", program = "IITA",
+  description = "Split plot from agricolae", accession = "genotypes", prompt = FALSE)
+sp$design_type
+```
+
+Good to know:
+
+- **Accessions** must already exist in Breedbase, as for any design.
+- **Name the accession vector.** agricolae names the field-book column after
+  what you pass in, so put the names in a variable first
+  (`genotypes <- c(...)`): the column is then simply `genotypes`.
+- **Other treatment factors** (e.g. fertilizer in a split plot or a
+  factorial) and the main-plot/subplot structure stay in R
+  (`$book`, `$parameters`) but are not stored in Breedbase: only the
+  accession of each plot is.
+- **Row and column** are uploaded only when agricolae's field book has them:
+  Latin square, Youden and Graeco designs do; CRD, RCBD, alpha and lattice
+  do not. `add_plot_coordinates(origin = ...)` needs them; for the others,
+  give the GPS per plot with `latitude` and `longitude` or a table (see
+  [Plot GPS coordinates](#plot-gps-coordinates)).
+- **Invalid parameters:** agricolae returns no design when the parameters
+  do not fit (e.g. `design.alpha()` with 12 treatments in blocks of 4); the
+  conversion then stops with a message. Check the agricolae output first.
 
 The same workflow is included in the runnable script's section 8e
 (`scripts/breedtools_script.R`) and section E5 of the packaged example:
