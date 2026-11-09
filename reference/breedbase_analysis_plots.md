@@ -51,7 +51,7 @@ analysis) is not listed, although it is part of the analysis.
 
 ``` r
 if (FALSE) { # \dontrun{
-con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "sgn")
+con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
 plots <- breedbase_analysis_plots(con, "AYT_2026_stage1")
 head(plots)
 } # }
