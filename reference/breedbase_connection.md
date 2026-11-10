@@ -2,10 +2,16 @@
 
 How to connect breedtools to a 'Breedbase' site, such as the production
 site <https://cassavabase.org> or the test site
-<https://cassava-test.sgn.cornell.edu>. Every function that reads from
+`https://cassava-test.sgn.cornell.edu`. Every function that reads from
 or writes to Breedbase takes the connection returned by
 [`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md)
 as its `con` argument.
+
+## Value
+
+This help topic documents no function;
+[`breedbase_login()`](https://solgenomics.github.io/breedtools/reference/breedbase_login.md)
+returns the `breedbase_connection` object described here.
 
 ## What you need
 

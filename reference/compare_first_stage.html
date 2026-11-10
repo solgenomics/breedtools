@@ -93,12 +93,12 @@ per location). The summary is also printed.</p>
 <span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="fl">50</span> <span class="op">+</span> <span class="fl">0.8</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">row</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="analyze_augmented_row_column_design.html">analyze_augmented_row_column_design</a></span><span class="op">(</span><span class="va">d</span>, <span class="st">"yield"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cmp</span> <span class="op">&lt;-</span> <span class="fu">compare_first_stage</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Raw versus first-stage adjusted values:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  location plots cor_raw_adjusted sd_raw sd_adjusted genotype_rank_cor</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     trial   144            0.384    3.6        2.89             0.314</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  top10pct_kept</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (genotype_rank_cor: Spearman correlation of genotype means; top10pct_kept: share of the raw top 10% still in the adjusted top 10%)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Raw versus first-stage adjusted values:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  location plots cor_raw_adjusted sd_raw sd_adjusted genotype_rank_cor</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>     trial   144            0.384    3.6        2.89             0.314</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  top10pct_kept</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>            0.5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> (genotype_rank_cor: Spearman correlation of genotype means; top10pct_kept: share of the raw top 10% still in the adjusted top 10%)</span>
 <span class="r-plt img"><img src="compare_first_stage-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

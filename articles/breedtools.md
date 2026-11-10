@@ -1399,7 +1399,7 @@ has the same guide in the reference manual.
 - **The site.** A production site such as <https://cassavabase.org>
   holds the real data of the breeding programs: whatever you save there
   is shared with them. A test site such as
-  <https://cassava-test.sgn.cornell.edu> is a copy for trying things
+  `https://cassava-test.sgn.cornell.edu` is a copy for trying things
   out. Learn the workflow, and try new scripts, on the test site first.
 - **An account on that site.** Create it on the site (“Login”, then “New
   user”). Accounts are separate for each site: your cassavabase.org
