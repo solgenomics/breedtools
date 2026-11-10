@@ -100,13 +100,13 @@ remove_outliers <- function(data, traits, multiplier = 1.5,
     n_values <- sum(vapply(traits, function(t) sum(!is.na(suppressWarnings(as.numeric(data[[t]])))), integer(1))) +
       nrow(found)
     if (!nrow(found)) {
-      cat("No outliers (IQR x ", multiplier, ") among ", n_values, " values", if (length(by)) paste0(" (within each ", paste(by, collapse = ", "), ")"), ".\n", sep = "")
+      bt_say("No outliers (IQR x ", multiplier, ") among ", n_values, " values", if (length(by)) paste0(" (within each ", paste(by, collapse = ", "), ")"), ".\n", sep = "")
     } else {
-      cat("Removed ", nrow(found), " of ", n_values, " values as outliers (outside Q1 - ", multiplier,
+      bt_say("Removed ", nrow(found), " of ", n_values, " values as outliers (outside Q1 - ", multiplier,
           " IQR and Q3 + ", multiplier, " IQR", if (length(by)) paste0(", within each ", paste(by, collapse = ", ")),
           "):\n", sep = "")
       show <- as.data.frame(found[, setdiff(names(found), ".row"), drop = FALSE])
-      print(show, row.names = FALSE, digits = 4)
+      bt_show(show, row.names = FALSE, digits = 4)
     }
   }
   attr(data, "outliers") <- found[, setdiff(names(found), ".row"), drop = FALSE]
@@ -408,9 +408,9 @@ compare_first_stage <- function(fit, plot = TRUE, locations = NULL) {
       top10pct_kept = mean(names(sort(-raw_g))[seq_len(top)] %in% names(sort(-adj_g))[seq_len(top)])
     )
   }))
-  cat("Raw versus first-stage adjusted values:\n")
-  print(as.data.frame(summary), row.names = FALSE, digits = 3)
-  cat("(genotype_rank_cor: Spearman correlation of genotype means; top10pct_kept: share of the raw top 10%",
+  bt_say("Raw versus first-stage adjusted values:\n")
+  bt_show(as.data.frame(summary), row.names = FALSE, digits = 3)
+  bt_say("(genotype_rank_cor: Spearman correlation of genotype means; top10pct_kept: share of the raw top 10%",
       "still in the adjusted top 10%)\n")
   if (isTRUE(plot)) {
     draw <- if (is.null(locations)) unique(per_plot$location) else intersect(locations, unique(per_plot$location))

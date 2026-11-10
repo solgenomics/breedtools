@@ -609,7 +609,7 @@ test_that("method optimal can be forced and meets the same placement rules as la
   for (d in list(latin, optimal)) {
     expect_equal(d$summary$adjacent_checks_in_blocks, 0)
     suppressMessages(check_reset())
-    expect_output(expect_true(check_design(d)), "even numbers of check plots")
+    expect_message(expect_true(check_design(d)), "even numbers of check plots")
   }
   suppressMessages(check_reset())
   expect_error(
@@ -769,7 +769,7 @@ test_that("checks are never placed next to each other inside a block", {
     expect_equal(d$summary$adjacent_checks_in_blocks, 0)
   }
   expect_equal(latin$summary$adjacent_checks_across_blocks, 0)
-  expect_output(check_design(pw), "no checks next to each other inside a block \\(0 pairs\\)")
+  expect_message(check_design(pw), "no checks next to each other inside a block \\(0 pairs\\)")
   suppressMessages(check_reset())
 })
 
@@ -786,11 +786,11 @@ test_that("blocks with at least as many check plots as checks hold every check",
     expect_true(all(tab[full, ] <= 2))                       # at most one repeat
     expect_true(all(tab[!full, ] <= 1))                      # incomplete blocks: distinct checks
   }
-  expect_output(expect_true(check_design(pw)), "checks spread evenly in each block")
+  expect_message(expect_true(check_design(pw)), "checks spread evenly in each block")
   broken <- pw
   i <- which(broken$design$is_control == 1 & broken$design$block == 2)
   broken$design$all_entries[i] <- "A"
-  expect_output(expect_false(check_design(broken)), "\\[FAIL\\] +checks spread evenly")
+  expect_message(expect_false(check_design(broken)), "\\[FAIL\\] +checks spread evenly")
   suppressMessages(check_reset())
 })
 

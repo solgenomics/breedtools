@@ -19,7 +19,8 @@
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe",
+#'                        site_username = "web_user_name")
 #' pheno <- breedbase_phenotypes(con, trials = c("FALL_2026_Ibadan", "FALL_2026_Ikenne"),
 #'                               traits = c("fresh root yield", "dry matter content percentage"))
 #' plot_trait(pheno, "fresh root yield", by = "trial_name")
@@ -32,7 +33,7 @@ breedbase_phenotypes <- function(con, trials, traits) {
   traits <- unique(trimws(as.character(traits)))
   if (!length(trials) || any(!nzchar(trials))) stop("Give the trial names in `trials`.", call. = FALSE)
   if (!length(traits) || any(!nzchar(traits))) stop("Give the trait names in `traits`.", call. = FALSE)
-  cat("Reading ", length(trials), " trial", if (length(trials) > 1) "s" else "", " from ", con$url, "\n", sep = "")
+  bt_say("Reading ", length(trials), " trial", if (length(trials) > 1) "s" else "", " from ", con$url, "\n", sep = "")
 
   ids <- bb_find_variables(con, traits)
   full <- attr(ids, "full_name")
@@ -69,13 +70,13 @@ breedbase_phenotypes <- function(con, trials, traits) {
       tab[[traits[j]]] <- unname(v[tab$plot_name])
       counts[j] <- sum(!is.na(tab[[traits[j]]]))
     }
-    cat(sprintf("  [OK]   %s (%s): %d plots; %s\n", trials[k], info[[k]]$location %||% "?", nrow(tab),
+    bt_say(sprintf("  [OK]   %s (%s): %d plots; %s\n", trials[k], info[[k]]$location %||% "?", nrow(tab),
                 paste(sprintf("%s %d values", traits, counts), collapse = ", ")))
     out[[k]] <- tab
   }
   res <- dplyr::bind_rows(out)
   if (all(vapply(traits, function(t) all(is.na(res[[t]])), logical(1)))) {
-    cat("  [NOTE] No values were found for these traits in these trials.\n")
+    bt_say("  [NOTE] No values were found for these traits in these trials.\n")
   }
   attr(res, "trait_names") <- stats::setNames(unname(full), traits)
   res

@@ -434,7 +434,7 @@ bb_choose_statistic <- function(con, statistic = NULL, kind = c("spatial", "blue
       if (!(isTRUE(offline) || is.null(con))) {
         onto <- bb_obo_statistics()
         if (!any(onto$accession == hit$accession & tolower(onto$statistic) == tolower(hit$statistic))) {
-          cat("  [NOTE] the statistic '", hit$statistic, "' (", hit$accession, ") of this Breedbase is not in the ",
+          bt_say("  [NOTE] the statistic '", hit$statistic, "' (", hit$accession, ") of this Breedbase is not in the ",
               "statistics ontology file of Breedbase.\n", sep = "")
         }
       }
@@ -553,13 +553,13 @@ save_breedbase_first_stage <- function(values, con = NULL, as_trait = NULL, stat
     targets <- stats::setNames(paste(sub("\\|.*$", "", traits), stat_name, sep = "|"), traits)
   } else {
     if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
-    cat("Finding the traits for the adjusted values in ", con$url, "\n", sep = "")
+    bt_say("Finding the traits for the adjusted values in ", con$url, "\n", sep = "")
     adj <- breedbase_adjusted_trait(con, traits, statistic = statistic, create = FALSE)
     for (i in seq_len(nrow(adj))) {
       if (adj$status[i] == "exists") {
-        cat("  [OK]   trait '", adj$adjusted_trait[i], "' (id ", adj$adjusted_trait_db_id[i], ")\n", sep = "")
+        bt_say("  [OK]   trait '", adj$adjusted_trait[i], "' (id ", adj$adjusted_trait_db_id[i], ")\n", sep = "")
       } else {
-        cat("  [NEW]  trait '", adj$adjusted_trait[i], "' will be created\n", sep = "")
+        bt_say("  [NEW]  trait '", adj$adjusted_trait[i], "' will be created\n", sep = "")
       }
     }
     missing <- adj$status == "missing"
@@ -580,7 +580,7 @@ save_breedbase_first_stage <- function(values, con = NULL, as_trait = NULL, stat
       }
       adj <- breedbase_adjusted_trait(con, traits, statistic = statistic, create = TRUE)
       for (i in which(adj$status == "created")) {
-        cat("  [OK]   trait '", adj$adjusted_trait[i], "' created (id ", adj$adjusted_trait_db_id[i], ")\n", sep = "")
+        bt_say("  [OK]   trait '", adj$adjusted_trait[i], "' created (id ", adj$adjusted_trait_db_id[i], ")\n", sep = "")
       }
     }
     targets <- stats::setNames(adj$adjusted_trait, traits)
@@ -896,14 +896,14 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   }
   if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
 
-  cat("Checking the analysis before saving to ", con$url, "\n", sep = "")
+  bt_say("Checking the analysis before saving to ", con$url, "\n", sep = "")
   # Analyses are created by Breedbase's web pages (BrAPI cannot create an
   # analysis project). If the site's web pages are closed by a web password
   # we do not have, everything is checked through BrAPI and the upload file
   # for the "Upload analysis" form of the website is written instead.
   web_ok <- !identical(bb_web_access(con), "password")
   prog <- bb_find_program(con, program)
-  cat("  [OK]   breeding program '", prog$program, "'\n", sep = "")
+  bt_say("  [OK]   breeding program '", prog$program, "'\n", sep = "")
   problems <- character(0)
   existing_analysis <- if (web_ok) bb_find_analysis(con, analysis_name) else NA_character_
   if (!is.na(existing_analysis)) {
@@ -916,7 +916,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
     problems <- c(problems, paste0("A trial named '", analysis_name,
                                    "' already exists. Choose another `analysis_name`."))
   } else {
-    cat("  [OK]   analysis name '", analysis_name, "' is free", if (!web_ok) " (as a trial; analyses are checked by the website)", "\n", sep = "")
+    bt_say("  [OK]   analysis name '", analysis_name, "' is free", if (!web_ok) " (as a trial; analyses are checked by the website)", "\n", sep = "")
   }
   folder_id <- NA_character_
   if (!is.null(folder)) {
@@ -924,10 +924,10 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
     if (!folder %in% folders$folder) folder <- bb_clean_name(folder, "folder name")
     folder_id <- bb_folder_id(con, prog$program, folder)
     if (!is.na(folder_id)) {
-      cat("  [OK]   folder '", folder, "' exists: the analysis will be put inside it (",
+      bt_say("  [OK]   folder '", folder, "' exists: the analysis will be put inside it (",
           con$url, "/folder/", folder_id, ")\n", sep = "")
     } else if (isTRUE(create_folder)) {
-      cat("  [NEW]  folder '", folder, "' will be created\n", sep = "")
+      bt_say("  [NEW]  folder '", folder, "' will be created\n", sep = "")
     } else {
       problems <- c(problems, paste0("Folder '", folder, "' was not found in program '", prog$program,
                                      "'. Existing folders: ", paste(utils::head(folders$folder, 20), collapse = ", "),
@@ -946,7 +946,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
                                    " are not in Breedbase: ", paste(utils::head(missing_stocks, 10), collapse = ", "),
                                    if (level == "plot") ". Use the plot names of the saved trials (first_stage_values())." else ""))
   } else {
-    cat("  [OK]   all ", length(stocks), " ", what, " are in Breedbase\n", sep = "")
+    bt_say("  [OK]   all ", length(stocks), " ", what, " are in Breedbase\n", sep = "")
   }
   full <- attr(bb_find_variables(con, traits), "full_name")
   if (anyNA(full)) {
@@ -954,15 +954,15 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
                                    paste0("'", traits[is.na(full)], "'", collapse = ", "),
                                    ". Use the trait name as shown in Breedbase."))
   } else {
-    for (t in traits) cat("  [OK]   trait '", full[[t]], "'\n", sep = "")
+    for (t in traits) bt_say("  [OK]   trait '", full[[t]], "'\n", sep = "")
   }
   if (length(problems)) stop(paste(problems, collapse = "\n"), call. = FALSE)
   if (!web_ok) {
     onto <- bb_choose_statistic(NULL, statistic, kind = estimate, offline = TRUE)
     statistic_full <- paste0(onto$name, "|", onto$accession)
-    cat("  [OK]   statistic '", statistic_full, "' (checked in the Breedbase statistics ontology)\n", sep = "")
+    bt_say("  [OK]   statistic '", statistic_full, "' (checked in the Breedbase statistics ontology)\n", sep = "")
     bb_show_composed(con, traits, full, onto, web = FALSE)
-    if (!is.null(folder)) cat("  [NOTE] after uploading, move the analysis to folder '", folder, "' on the website\n", sep = "")
+    if (!is.null(folder)) bt_say("  [NOTE] after uploading, move the analysis to folder '", folder, "' on the website\n", sep = "")
     return(invisible(bb_analysis_upload_file(
       build_file(as.list(full)), analysis_name = analysis_name, description = description, protocol = protocol,
       level = level, program = prog$program, year = year, statistic = statistic_full,
@@ -971,9 +971,9 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   }
   stat <- bb_choose_statistic(con, statistic, kind = estimate)
   statistic_full <- paste0(stat$name, "|", stat$accession)
-  cat("  [OK]   statistic '", statistic_full, "' (from this Breedbase)\n", sep = "")
+  bt_say("  [OK]   statistic '", statistic_full, "' (from this Breedbase)\n", sep = "")
   stored_as <- bb_show_composed(con, traits, full, stat, web = TRUE)
-  cat("  [OK]   analysis of ", what, ": ", length(stocks), " rows, ", length(traits), " trait",
+  bt_say("  [OK]   analysis of ", what, ": ", length(stocks), " rows, ", length(traits), " trait",
       if (length(traits) > 1) "s" else "", "\n", sep = "")
 
   file <- build_file(as.list(full))
@@ -982,7 +982,7 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
   plan <- sprintf("analysis '%s' of %d %s in program '%s'%s at %s", analysis_name, length(stocks), what,
                   prog$program, if (is.null(folder)) "" else paste0(", folder '", folder, "',"), con$url)
   if (isTRUE(dry_run)) {
-    cat("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
+    bt_say("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
     return(invisible(list(file = file, form = form, traits = stored_as)))
   }
   if (isTRUE(confirm)) {
@@ -1012,14 +1012,14 @@ save_breedbase_analysis <- function(data, con = NULL, analysis_name, program, de
     if (is.na(folder_id)) folder_id <- bb_create_folder(con, prog, folder, saved = "the analysis")
     bb_move_to_folder(con, analysis_id, folder_id, what = paste0("put analysis '", analysis_name,
                                                                 "' in folder '", folder, "'"))
-    cat("  [OK]   analysis put in folder '", folder, "' (", con$url, "/folder/", folder_id, ")\n", sep = "")
+    bt_say("  [OK]   analysis put in folder '", folder, "' (", con$url, "/folder/", folder_id, ")\n", sep = "")
   }
   n_back <- bb_analysis_row_count(con, analysis_id)
   page <- paste0(con$url, "/analyses/", analysis_id)
   status <- if (!is.na(n_back) && n_back >= length(stocks)) "[OK]  " else "[CHECK]"
-  cat(sprintf("  %s analysis '%s' saved with %s of %d %s\n", status, analysis_name,
+  bt_say(sprintf("  %s analysis '%s' saved with %s of %d %s\n", status, analysis_name,
               if (is.na(n_back)) "?" else as.character(n_back), length(stocks), what))
-  cat("Open the analysis in Breedbase: ", page, "\n", sep = "")
+  bt_say("Open the analysis in Breedbase: ", page, "\n", sep = "")
   if (!identical(status, "[OK]  ")) {
     warning("Analysis '", analysis_name, "' was created, but ",
             if (is.na(n_back)) "its values could not be read back" else paste(n_back, "of", length(stocks), what, "have values"),
@@ -1038,10 +1038,10 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
   path <- upload_file %||% file.path(getwd(), paste0(gsub("[^A-Za-z0-9_.-]+", "_", analysis_name), "_upload.csv"))
   utils::write.csv(file, path, row.names = FALSE, na = "")
   stat_hint <- statistic
-  cat("  [NOTE] The web pages of ", con$url, " need their own web password, so the analysis cannot be sent from R.\n",
+  bt_say("  [NOTE] The web pages of ", con$url, " need their own web password, so the analysis cannot be sent from R.\n",
       "         Everything was checked through BrAPI. Upload this file in your browser instead:\n\n", sep = "")
-  cat("  File:   ", normalizePath(path), "\n", sep = "")
-  cat("  Where:  ", con$url, " > Analyze > Analyses > \"Upload analysis\" (or open ", con$url, "/analyses)\n\n",
+  bt_say("  File:   ", normalizePath(path), "\n", sep = "")
+  bt_say("  Where:  ", con$url, " > Analyze > Analyses > \"Upload analysis\" (or open ", con$url, "/analyses)\n\n",
       sep = "")
   rows <- c(
     "Analysis Name" = analysis_name,
@@ -1054,8 +1054,8 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
     "Compose Trait Info With Time Term" = if (length(time_terms)) paste(paste(names(time_terms), unname(time_terms), sep = "||||"), collapse = ",") else "(leave empty)",
     "File" = basename(path)
   )
-  for (i in seq_along(rows)) cat(sprintf("  %-38s %s\n", paste0(names(rows)[i], ":"), rows[[i]]))
-  cat("\n  The file has \"stock_names\" (", if (level == "plot") "field plot names" else "accession names",
+  for (i in seq_along(rows)) bt_say(sprintf("  %-38s %s\n", paste0(names(rows)[i], ":"), rows[[i]]))
+  bt_say("\n  The file has \"stock_names\" (", if (level == "plot") "field plot names" else "accession names",
       ") and one column per trait with its full Breedbase name.\n", sep = "")
   list(file = path, form = as.list(rows))
 }
@@ -1105,7 +1105,8 @@ bb_analysis_upload_file <- function(file, analysis_name, description, protocol, 
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe",
+#'                        site_username = "web_user_name")
 #' # dm1: first-stage values of dry matter, one row per field plot
 #' add_breedbase_analysis_values(dm1, con, analysis_name = "FALL_2026_stage1", level = "plot")
 #' }
@@ -1131,7 +1132,7 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
   stocks <- trimws(as.character(data[[key]]))
   if (anyDuplicated(stocks)) stop("Each ", key, " must appear once.", call. = FALSE)
 
-  cat("Adding values to analysis '", analysis_name, "' at ", con$url, "\n", sep = "")
+  bt_say("Adding values to analysis '", analysis_name, "' at ", con$url, "\n", sep = "")
   if (identical(bb_web_access(con), "password")) {
     stop("This site's web pages need their own web password; log in with site_username = \"...\" ",
          "(see ?breedbase_login).", call. = FALSE)
@@ -1145,7 +1146,7 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
     id <- bb_find_analysis(con, analysis_name)
   }
   if (is.na(id)) stop("Analysis '", analysis_name, "' was not found among your analyses.", call. = FALSE)
-  cat("  [OK]   analysis '", analysis_name, "' (", con$url, "/analyses/", id, ")\n", sep = "")
+  bt_say("  [OK]   analysis '", analysis_name, "' (", con$url, "/analyses/", id, ")\n", sep = "")
   # Analysis values are never stored under a plain trait: each trait is
   # stored as "trait|statistic|COMP:id" (a composed trait, created if needed),
   # as Breedbase does when it saves an analysis. By default the statistic is
@@ -1154,14 +1155,14 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
   if (is.null(statistic)) {
     statistic <- bb_analysis_statistic(con, id)
     if (!is.null(statistic)) {
-      cat("  [OK]   statistic '", statistic, "' (the one of this analysis)\n", sep = "")
+      bt_say("  [OK]   statistic '", statistic, "' (the one of this analysis)\n", sep = "")
     } else {
       estimate <- estimate %||% attr(data, "estimate") %||%
         if (level == "plot" && !identical(attr(data, "method"), "mixed")) "spatial" else "blue"
       estimate <- match.arg(estimate, c("blue", "blup", "spatial"))
       stat <- bb_choose_statistic(con, NULL, kind = estimate)
       statistic <- paste0(stat$name, "|", stat$accession)
-      cat("  [OK]   statistic '", statistic, "'\n", sep = "")
+      bt_say("  [OK]   statistic '", statistic, "'\n", sep = "")
     }
   }
   plain <- traits[!grepl("\\|COMP:[0-9]+$", traits)]        # composed traits given are kept
@@ -1174,13 +1175,13 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
       }
       # A dry run creates nothing, so Breedbase cannot verify values of a
       # trait that does not exist yet.
-      for (n in new) cat("  [NEW]  trait '", n, "' will be created when storing\n", sep = "")
-      cat("Dry run: values of new traits are verified by Breedbase when storing. Nothing was stored.\n")
+      for (n in new) bt_say("  [NEW]  trait '", n, "' will be created when storing\n", sep = "")
+      bt_say("Dry run: values of new traits are verified by Breedbase when storing. Nothing was stored.\n")
       return(invisible(list(analysis_name = analysis_name, plots = length(stocks), values = NA_integer_,
                             new_traits = new)))
     }
     composed <- vapply(adj$adjusted_trait, function(n) bb_find_variable_full(con, n), character(1))
-    for (i in seq_along(plain)) cat("  [OK]   ", plain[i], " -> '", composed[i], "' (", adj$status[i], ")\n", sep = "")
+    for (i in seq_along(plain)) bt_say("  [OK]   ", plain[i], " -> '", composed[i], "' (", adj$status[i], ")\n", sep = "")
     names(data)[match(plain, names(data))] <- unname(composed)
     traits[match(plain, traits)] <- unname(composed)
   }
@@ -1197,7 +1198,7 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
     stop("Trait(s) not found in Breedbase: ", paste0("'", traits[is.na(full)], "'", collapse = ", "),
          ". For first-stage values use a trait for adjusted values (breedbase_adjusted_trait()).", call. = FALSE)
   }
-  for (t in traits) cat("  [OK]   trait '", full[[t]], "'\n", sep = "")
+  for (t in traits) bt_say("  [OK]   trait '", full[[t]], "'\n", sep = "")
   units <- paste0(analysis_name, "_", stocks)
   f <- data.frame(observationunit_name = units, stringsAsFactors = FALSE, check.names = FALSE)
   for (t in traits) f[[full[[t]]]] <- ifelse(is.na(data[[t]]), "", as.character(data[[t]]))
@@ -1219,10 +1220,10 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
          " messages), e.g. ", gsub("<[^>]+>", "", verified$warning[[1]]),
          ". Use another trait, or overwrite = TRUE to replace them.", call. = FALSE)
   }
-  cat("  [OK]   Breedbase verified ", nrow(f), " analysis plots and ", n_values, " values\n", sep = "")
+  bt_say("  [OK]   Breedbase verified ", nrow(f), " analysis plots and ", n_values, " values\n", sep = "")
   plan <- sprintf("%d values on %d plots of analysis '%s'", n_values, nrow(f), analysis_name)
   if (isTRUE(dry_run)) {
-    cat("Dry run: ready to add ", plan, ". Nothing was stored.\n", sep = "")
+    bt_say("Dry run: ready to add ", plan, ". Nothing was stored.\n", sep = "")
     return(invisible(list(analysis_name = analysis_name, plots = nrow(f), values = n_values, verified = verified)))
   }
   if (isTRUE(confirm)) {
@@ -1234,8 +1235,8 @@ add_breedbase_analysis_values <- function(data, con, analysis_name, level = c("p
   }
   # 2. Breedbase stores the values (and refreshes its phenotype cache).
   stored <- bb_phenotype_upload(con, "store", fields, path)
-  cat("  [OK]   added ", plan, "\n", sep = "")
-  cat("Open the analysis in Breedbase: ", con$url, "/analyses/", id, "\n", sep = "")
+  bt_say("  [OK]   added ", plan, "\n", sep = "")
+  bt_say("Open the analysis in Breedbase: ", con$url, "/analyses/", id, "\n", sep = "")
   invisible(list(analysis_name = analysis_name, analysis_db_id = id, plots = nrow(f), values = n_values,
                  messages = unlist(stored$success)))
 }
@@ -1437,7 +1438,8 @@ analysis_plot_names <- function(data, analysis_name, level = c("plot", "accessio
 #'
 #' @examples
 #' \dontrun{
-#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe", site_username = "web_user_name")
+#' con <- breedbase_login("https://cassava-test.sgn.cornell.edu", "jdoe",
+#'                        site_username = "web_user_name")
 #' plots <- breedbase_analysis_plots(con, "AYT_2026_stage1")
 #' head(plots)
 #' }
@@ -1541,7 +1543,7 @@ bb_analysis_statistic <- function(con, id) {
   stats_found <- stats_found[ok]
   if (!length(stats_found)) return(NULL)
   if (length(stats_found) > 1) {
-    cat("  [NOTE] the analysis has traits with ", length(stats_found), " statistics; using '", stats_found[1],
+    bt_say("  [NOTE] the analysis has traits with ", length(stats_found), " statistics; using '", stats_found[1],
         "' (choose another with `statistic = ...`)\n", sep = "")
   }
   stats_found[1]
@@ -1567,9 +1569,9 @@ bb_show_composed <- function(con, traits, full, stat, web = TRUE) {
   status <- ifelse(is.na(stored), "new", "exists")
   stored[is.na(stored)] <- composed[is.na(stored)]
   for (i in seq_along(traits)) {
-    cat("  [OK]   '", traits[i], "' will be stored as '", stored[i], "'",
+    bt_say("  [OK]   '", traits[i], "' will be stored as '", stored[i], "'",
         if (status[i] == "new") " (new composed trait: Breedbase creates it)" else "", "\n", sep = "")
   }
-  cat("         Another statistic? See breedbase_statistics(con) and give statistic = \"...\"\n")
+  bt_say("         Another statistic? See breedbase_statistics(con) and give statistic = \"...\"\n")
   tibble::tibble(trait = traits, stored_as = stored, status = status)
 }

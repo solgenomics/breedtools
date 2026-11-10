@@ -339,7 +339,7 @@ bb_save_plot_geo <- function(con, study_id, geo, trial, accessions = NULL) {
                       character(1))
   n_found <- sum(has_geo & back_nums %in% names(geo))
   status <- if (n_found == length(geo)) "[OK]  " else "[FAIL]"
-  cat(sprintf("  %s GPS coordinates of trial '%s' saved for %d of %d plots\n", status, trial, n_found, length(geo)))
+  bt_say(sprintf("  %s GPS coordinates of trial '%s' saved for %d of %d plots\n", status, trial, n_found, length(geo)))
   n_found
 }
 
@@ -390,18 +390,18 @@ save_breedbase_coordinates <- function(design, con, trial_name = NULL, dry_run =
                                   plot_name_pattern = "{trial}_{plot}")
   geos <- lapply(studies, bb_study_geo)
   if (!sum(lengths(geos))) stop("The design has no plot coordinates: use add_plot_coordinates() first.", call. = FALSE)
-  cat("Checking before saving GPS coordinates to ", con$url, "\n", sep = "")
+  bt_say("Checking before saving GPS coordinates to ", con$url, "\n", sep = "")
   ids <- character(length(studies))
   for (i in seq_along(studies)) {
     name <- studies[[i]]$study$studyName
     ids[i] <- bb_find_study(con, name)
     if (is.na(ids[i])) stop("Trial '", name, "' was not found in Breedbase.", call. = FALSE)
-    cat("  [OK]   trial '", name, "': ", length(geos[[i]]), " plots with coordinates\n", sep = "")
+    bt_say("  [OK]   trial '", name, "': ", length(geos[[i]]), " plots with coordinates\n", sep = "")
   }
   out <- tibble::tibble(trial_name = vapply(studies, function(s) s$study$studyName, character(1)),
                         plots_with_gps = lengths(geos), gps_found = NA_integer_)
   if (isTRUE(dry_run)) {
-    cat("Dry run: nothing was written.\n")
+    bt_say("Dry run: nothing was written.\n")
     return(invisible(out))
   }
   if (isTRUE(confirm)) {

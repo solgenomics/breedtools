@@ -27,14 +27,14 @@ test_that("outliers: IQR fences within locations, values set to NA and reported"
   # Without grouping, location B's normal values would not be outliers but the low one in A is hidden.
   expect_false(3 %in% find_outliers(d, "yield", by = NULL)$plots)
 
-  out <- capture.output(clean <- remove_outliers(d, "yield"))
+  out <- capture_msgs(clean <- remove_outliers(d, "yield"))
   expect_true(all(is.na(clean$yield[c(3, 25)])))
   expect_equal(sum(is.na(clean$yield)), 2)
   expect_true(any(grepl("Removed 2 of 40 values", out)))
   expect_equal(nrow(attr(clean, "outliers")), 2)
   expect_equal(nrow(find_outliers(d, "yield", multiplier = 100)), 0)
   expect_error(find_outliers(d, "yield", multiplier = -1), "positive")
-  expect_true(any(grepl("No outliers", capture.output(remove_outliers(d[-c(3, 25), ], "yield")))))
+  expect_true(any(grepl("No outliers", capture_msgs(remove_outliers(d[-c(3, 25), ], "yield")))))
 })
 
 test_that("plot_trait draws and summarises per location", {
@@ -117,7 +117,7 @@ test_that("compare_first_stage puts raw and adjusted values side by side", {
   fit <- analyze_augmented_row_column_design(d, "yield")
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off(), add = TRUE)
-  out <- capture.output(cmp <- compare_first_stage(fit))
+  out <- capture_msgs(cmp <- compare_first_stage(fit))
   expect_equal(nrow(cmp$plots), 144)
   expect_equal(cmp$plots$raw, d$yield[match(cmp$plots$plots, d$plots)])
   expect_equal(cmp$plots$change, cmp$plots$adjusted - cmp$plots$raw)
@@ -125,7 +125,7 @@ test_that("compare_first_stage puts raw and adjusted values side by side", {
   # The row trend is in the raw values, not in the adjusted ones.
   expect_lt(abs(coef(lm(adjusted ~ row, cmp$plots))[2]), abs(coef(lm(raw ~ row, cmp$plots))[2]))
   t1 <- analyze_two_stage(sim$data, "yield", stage1 = "design")
-  out <- capture.output(cmp2 <- compare_first_stage(t1, plot = FALSE))
+  out <- capture_msgs(cmp2 <- compare_first_stage(t1, plot = FALSE))
   expect_equal(cmp2$summary$location, c("North", "Central", "South"))
 })
 
@@ -138,7 +138,7 @@ test_that("first-stage comparisons group Breedbase trials with missing or shared
   for (label in c(NA_character_, "Shared_station")) {
     d$location <- label
     fit <- analyze_two_stage(d, "yield", stage1 = "blocks", location_col = "trial_name")
-    invisible(capture.output(cmp <- compare_first_stage(fit)))
+    invisible(capture_msgs(cmp <- compare_first_stage(fit)))
     expect_equal(cmp$summary$location, unique(d$trial_name))
     expect_equal(cmp$summary$plots, rep(144L, 3))
     expect_false(anyNA(cmp$plots$location))

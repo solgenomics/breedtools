@@ -5,7 +5,7 @@ agricolae_payload <- function(design, ...) {
 
 test_that("RCBD conversion keeps accessions, plot numbers and blocks through the save payload", {
   skip_if_not_installed("agricolae")
-  withr::local_preserve_seed()
+  local_agricolae_rng()
   accessions <- c("G1", "G2", "G3", "C1")
   original <- agricolae::design.rcbd(accessions, r = 3, seed = 2026)
   converted <- as_breedbase_design(original, checks = "C1")
@@ -32,7 +32,7 @@ test_that("RCBD conversion keeps accessions, plot numbers and blocks through the
 
 test_that("CRD, alpha, lattice and augmented blocks use their actual replication columns", {
   skip_if_not_installed("agricolae")
-  withr::local_preserve_seed()
+  local_agricolae_rng()
   accessions <- paste0("G", 1:12)
   crd <- agricolae::design.crd(accessions[1:3], r = c(1, 2, 3), seed = 1)
   converted <- as_breedbase_design(crd)
@@ -64,7 +64,7 @@ test_that("CRD, alpha, lattice and augmented blocks use their actual replication
 
 test_that("bare and serpentine field books retain the plot to accession mapping", {
   skip_if_not_installed("agricolae")
-  withr::local_preserve_seed()
+  local_agricolae_rng()
   accessions <- paste0("G", 1:4)
   original <- agricolae::design.rcbd(accessions, r = 3, seed = 1)
   book <- agricolae::zigzag(original)
@@ -94,7 +94,7 @@ test_that("custom column mapping works offline without an agricolae dependency",
 
 test_that("multiple factors need an explicit accession column and split plots stay distinct", {
   skip_if_not_installed("agricolae")
-  withr::local_preserve_seed()
+  local_agricolae_rng()
   genotype <- paste0("G", 1:4)
   irrigation <- c("low", "high")
   original <- agricolae::design.split(genotype, irrigation, r = 3, seed = 1)
@@ -120,7 +120,7 @@ test_that("multiple factors need an explicit accession column and split plots st
 
 test_that("designs without a direct Breedbase type require a choice and keep coordinates", {
   skip_if_not_installed("agricolae")
-  withr::local_preserve_seed()
+  local_agricolae_rng()
   accessions <- paste0("G", 1:4)
   square <- agricolae::design.lsd(accessions, seed = 1)
   expect_error(as_breedbase_design(square), "no automatic Breedbase design type.*lsd")

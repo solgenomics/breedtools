@@ -3,10 +3,14 @@
 \name{breedbase_connection}
 \alias{breedbase_connection}
 \title{Connecting to a Breedbase instance}
+\value{
+This help topic documents no function; \code{\link[=breedbase_login]{breedbase_login()}} returns
+the \code{breedbase_connection} object described here.
+}
 \description{
 How to connect breedtools to a 'Breedbase' site, such as the
 production site \url{https://cassavabase.org} or the test site
-\url{https://cassava-test.sgn.cornell.edu}. Every function that reads from
+\verb{https://cassava-test.sgn.cornell.edu}. Every function that reads from
 or writes to Breedbase takes the connection returned by
 \code{\link[=breedbase_login]{breedbase_login()}} as its \code{con} argument.
 }

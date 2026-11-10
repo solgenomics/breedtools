@@ -12,7 +12,7 @@
 #'
 #' How to connect breedtools to a 'Breedbase' site, such as the
 #' production site \url{https://cassavabase.org} or the test site
-#' \url{https://cassava-test.sgn.cornell.edu}. Every function that reads from
+#' `https://cassava-test.sgn.cornell.edu`. Every function that reads from
 #' or writes to Breedbase takes the connection returned by
 #' [breedbase_login()] as its `con` argument.
 #'
@@ -86,6 +86,9 @@
 #'                         site_username = "web_user_name")
 #' breedbase_locations(test)
 #' }
+#'
+#' @return This help topic documents no function; [breedbase_login()] returns
+#'   the `breedbase_connection` object described here.
 #'
 #' @name breedbase_connection
 NULL
@@ -380,7 +383,7 @@ breedbase_check <- function(con, accessions = NULL, location = NULL, program = N
   add <- function(what, name, status, suggestion = NA_character_) {
     rows[[length(rows) + 1]] <<- tibble::tibble(what = what, name = name, status = status, suggestion = suggestion)
   }
-  cat("Checking names in ", con$url, "\n", sep = "")
+  bt_say("Checking names in ", con$url, "\n", sep = "")
   if (!is.null(trial_name)) {
     trial_name <- bb_clean_name(trial_name, "trial name")
   }
@@ -560,27 +563,27 @@ bb_print_check <- function(out, unnamed = 0L) {
       what_ok <- if (w == "accession") " accessions are in Breedbase" else
         paste0(" plot names are free, e.g. '", x$name[x$status == "OK"][1], "'")
       if (w == "plot" && n_ok == 0) what_ok <- " plot names are free"
-      cat("  ", tag, "  ", n_ok, " of ", n_names, what_ok, "\n", sep = "")
+      bt_say("  ", tag, "  ", n_ok, " of ", n_names, what_ok, "\n", sep = "")
     } else {
       ok_note <- switch(w, folder = " exists: the trial will be saved inside it", trial = " is free",
                         plot = " is free", "")
-      for (i in seq_len(nrow(x))) if (x$status[i] == "OK") cat("  [OK]   ", w, " '", x$name[i], "'", ok_note, "\n", sep = "")
+      for (i in seq_len(nrow(x))) if (x$status[i] == "OK") bt_say("  [OK]   ", w, " '", x$name[i], "'", ok_note, "\n", sep = "")
     }
-    for (i in which(x$status == "EMPTY")) cat("  [NOTE] ", w, " '", x$name[i], "' ", x$suggestion[i], "\n", sep = "")
+    for (i in which(x$status == "EMPTY")) bt_say("  [NOTE] ", w, " '", x$name[i], "' ", x$suggestion[i], "\n", sep = "")
     for (i in seq_len(nrow(new))) {
-      cat("  [NEW]  ", w, " '", new$name[i], "' does not exist yet",
+      bt_say("  [NEW]  ", w, " '", new$name[i], "' does not exist yet",
           if (!is.na(new$suggestion[i])) paste0(": ", new$suggestion[i]), "\n", sep = "")
     }
     shown <- utils::head(seq_len(nrow(bad)), 20)
     for (i in shown) {
       status_text <- c(MISSING = "not found", TAKEN = "already exists", REPEATED = "is repeated")[[bad$status[i]]]
-      cat("  [FIX]  ", w, " '", bad$name[i], "' ", status_text,
+      bt_say("  [FIX]  ", w, " '", bad$name[i], "' ", status_text,
           if (!is.na(bad$suggestion[i])) paste0(": ", bad$suggestion[i]), "\n", sep = "")
     }
-    if (nrow(bad) > length(shown)) cat("         ... and ", nrow(bad) - length(shown), " more\n", sep = "")
+    if (nrow(bad) > length(shown)) bt_say("         ... and ", nrow(bad) - length(shown), " more\n", sep = "")
   }
   if (unnamed > 0) {
-    cat("  [NOTE] ", unnamed, " design", if (unnamed > 1) "s have" else " has",
+    bt_say("  [NOTE] ", unnamed, " design", if (unnamed > 1) "s have" else " has",
         " no plot names yet, so their plot names were not checked: give one design per trial ",
         "(with its trial_name and location), or add them with add_plot_names(design, trial_name, location)\n",
         sep = "")
@@ -594,17 +597,17 @@ bb_print_check <- function(out, unnamed = 0L) {
   if (unnamed > 0) checked <- c(checked, "plot names NOT checked")
   checked <- paste(checked, collapse = ", ")
   bad <- out[!out$status %in% c("OK", "NEW", "EMPTY"), , drop = FALSE]
-  cat("\n")
+  bt_say("\n")
   if (nrow(bad) == 0) {
-    cat("READY: everything checked can be saved to Breedbase (", checked, ").\n", sep = "")
-    cat("Next: save_breedbase(..., dry_run = TRUE) for a last check, then without dry_run to save.\n")
+    bt_say("READY: everything checked can be saved to Breedbase (", checked, ").\n", sep = "")
+    bt_say("Next: save_breedbase(..., dry_run = TRUE) for a last check, then without dry_run to save.\n")
   } else {
     per <- table(factor(bad$what, levels = names(labels)))
     per <- per[per > 0]
     what_bad <- paste0(per, " ", labels[names(per)], ifelse(per > 1, "s", ""), collapse = ", ")
-    cat("NOT READY: fix ", nrow(bad), " problem", if (nrow(bad) > 1) "s" else "", " (", what_bad,
+    bt_say("NOT READY: fix ", nrow(bad), " problem", if (nrow(bad) > 1) "s" else "", " (", what_bad,
         ", marked [FIX] above) and run breedbase_check() again.\n", sep = "")
-    cat("Checked: ", checked, ".\n", sep = "")
+    bt_say("Checked: ", checked, ".\n", sep = "")
   }
 }
 
@@ -760,14 +763,14 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
     stop("`folder` must be one folder name, or NULL to save the trial directly in the program.", call. = FALSE)
   }
 
-  cat("Checking before saving to ", con$url, "\n", sep = "")
+  bt_say("Checking before saving to ", con$url, "\n", sep = "")
   prog <- bb_find_program(con, program)
-  cat("  [OK]   breeding program '", prog$program, "'\n", sep = "")
+  bt_say("  [OK]   breeding program '", prog$program, "'\n", sep = "")
 
   if (is.null(folder)) {
     # No folder: the trial's parent is the breeding program itself.
     folder_id <- prog$program_db_id
-    cat("  [OK]   no folder given: the trial will be saved directly in program '", prog$program, "'\n", sep = "")
+    bt_say("  [OK]   no folder given: the trial will be saved directly in program '", prog$program, "'\n", sep = "")
   } else {
     folders <- breedbase_folders(con, prog$program)
     # An existing folder is used as it is, even with spaces in its name; a
@@ -782,9 +785,9 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
            paste(utils::head(folders$folder, 20), collapse = ", "),
            ". Use create_folder = TRUE to create it.", call. = FALSE)
     }
-    cat("  [NEW]  folder '", folder, "' will be created\n", sep = "")
+    bt_say("  [NEW]  folder '", folder, "' will be created\n", sep = "")
   } else if (!is.null(folder)) {
-    cat("  [OK]   folder '", folder, "' exists: the trial will be saved inside it (",
+    bt_say("  [OK]   folder '", folder, "' exists: the trial will be saved inside it (",
         con$url, "/folder/", folder_id, ")\n", sep = "")
   }
 
@@ -820,9 +823,9 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
   for (i in seq_along(studies)) {
     studies[[i]]$study$locationDbId <- loc_check$location_db_id[loc_check$name == studies[[i]]$breedbase_location]
   }
-  cat("  [OK]   location", if (length(loc_names) > 1) "s" else "", " ", paste0("'", loc_names, "'", collapse = ", "),
+  bt_say("  [OK]   location", if (length(loc_names) > 1) "s" else "", " ", paste0("'", loc_names, "'", collapse = ", "),
       "\n", sep = "")
-  cat("  [OK]   all ", length(germplasm), " entries and checks exist as accessions\n", sep = "")
+  bt_say("  [OK]   all ", length(germplasm), " entries and checks exist as accessions\n", sep = "")
 
   # A trial that exists without plots was left by an earlier save that was
   # cut off (e.g. a server timeout): the plots are added to it.
@@ -834,13 +837,13 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
         stop("A trial named '", name, "' already exists in Breedbase. Choose another `trial_name`.", call. = FALSE)
       }
       studies[[i]]$existing_id <- existing_id
-      cat("  [OK]   trial '", name, "' exists without plots (an earlier save was cut off): ",
+      bt_say("  [OK]   trial '", name, "' exists without plots (an earlier save was cut off): ",
           "its plots will be added\n", sep = "")
     }
   }
   new_names <- vapply(Filter(function(s) is.null(s$existing_id), studies), function(s) s$study$studyName, character(1))
   if (length(new_names)) {
-    cat("  [OK]   trial name", if (length(new_names) > 1) "s are" else " is", " free: ",
+    bt_say("  [OK]   trial name", if (length(new_names) > 1) "s are" else " is", " free: ",
         paste(new_names, collapse = ", "), "\n", sep = "")
   }
 
@@ -852,10 +855,10 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
          "add_plot_names() or in the design's `plot_name` column.",
          call. = FALSE)
   }
-  cat("  [OK]   all ", length(plot_names_all), " plot names are new, e.g. ", plot_names_all[1], "\n", sep = "")
+  bt_say("  [OK]   all ", length(plot_names_all), " plot names are new, e.g. ", plot_names_all[1], "\n", sep = "")
   n_geo <- sum(vapply(studies, function(s) length(bb_study_geo(s)), integer(1)))
   if (n_geo) {
-    cat("  [OK]   GPS coordinates of ", n_geo, " plots will be saved after the plots\n", sep = "")
+    bt_say("  [OK]   GPS coordinates of ", n_geo, " plots will be saved after the plots\n", sep = "")
   }
 
   n_plots <- sum(vapply(studies, function(s) length(s$plots), integer(1)))
@@ -864,7 +867,7 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
   plan <- sprintf("%d trial%s with %d plots %s at %s",
                   length(studies), if (length(studies) > 1) "s" else "", n_plots, where, con$url)
   if (isTRUE(dry_run)) {
-    cat("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
+    bt_say("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
     return(invisible(tibble::tibble(
       location = vapply(studies, `[[`, character(1), "breedbase_location"),
       trial_name = vapply(studies, function(s) s$study$studyName, character(1)),
@@ -914,7 +917,7 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
     )
     n_found <- bb_count_plots(con, study_id)
     status <- if (n_found == length(plots)) "[OK]  " else "[FAIL]"
-    cat(sprintf("  %s trial '%s' saved with %d of %d plots\n", status, s$study$studyName, n_found, length(plots)))
+    bt_say(sprintf("  %s trial '%s' saved with %d of %d plots\n", status, s$study$studyName, n_found, length(plots)))
     geo <- bb_study_geo(s)
     gps_found <- if (length(geo)) bb_save_plot_geo(con, study_id, geo, s$study$studyName) else NA_integer_
     out[[i]] <- tibble::tibble(
@@ -929,7 +932,7 @@ save_breedbase <- function(design, con = NULL, program = NULL, folder = NULL, tr
     )
   }
   out <- dplyr::bind_rows(out)
-  cat("Open the trial in Breedbase: ", paste(out$trial_page, collapse = ", "), "\n", sep = "")
+  bt_say("Open the trial in Breedbase: ", paste(out$trial_page, collapse = ", "), "\n", sep = "")
   invisible(out)
 }
 
@@ -1045,10 +1048,10 @@ bb_existing_germplasm <- function(con, names) {
   known <- intersect(names, names(bb_cached_ids(con)))
   to_search <- setdiff(names, known)
   if (length(known) && length(to_search)) {
-    cat("  ...    ", length(known), " of ", length(names),
+    bt_say("  ...    ", length(known), " of ", length(names),
         " accessions were already found in this session; searching the other ", length(to_search), "\n", sep = "")
   } else if (length(known)) {
-    cat("  ...    all ", length(known), " accessions were already found in this session (no new search)\n", sep = "")
+    bt_say("  ...    all ", length(known), " accessions were already found in this session (no new search)\n", sep = "")
   }
   # Breedbase builds the pedigree of every accession it finds, so germplasm
   # searches are slow: send small batches.
@@ -1085,7 +1088,7 @@ bb_progress <- function(total, label) {
     sprintf("%d:%02d", secs %/% 60, secs %% 60)
   }
   say <- function(text) {
-    cat(text, "\n", sep = "")
+    bt_say(text, "\n", sep = "")
     utils::flush.console()
   }
   list(
@@ -1186,7 +1189,7 @@ bb_write_checked <- function(what, write, find, attempts = 2, exists_ok = FALSE,
     if (isTRUE(check_on_error) && !isTRUE(res$busy) && !is.na(res$code) && res$code >= 500) {
       id <- tryCatch(find(), breedbase_error = function(e) NA_character_)
       if (!is.na(id)) {
-        cat("  [WARN] the server failed (HTTP ", res$code, ") while trying to ", what,
+        bt_say("  [WARN] the server failed (HTTP ", res$code, ") while trying to ", what,
             ", but it was created; checking what was stored\n", sep = "")
         return(structure(id, server_error = conditionMessage(res)))
       }
@@ -1199,17 +1202,17 @@ bb_write_checked <- function(what, write, find, attempts = 2, exists_ok = FALSE,
     }
     if (!isTRUE(res$busy)) stop(res)
     why <- if (is.na(res$code)) "no answer in time" else paste("HTTP", res$code)
-    cat("  ...    the server was slow to ", what, " (", why, "); checking whether it was done\n", sep = "")
+    bt_say("  ...    the server was slow to ", what, " (", why, "); checking whether it was done\n", sep = "")
     for (k in seq_len(checks)) {
       Sys.sleep(wait)
       id <- tryCatch(find(), breedbase_error = function(e) NA_character_)
       if (!is.na(id)) {
-        cat("  ...    confirmed: done\n")
+        bt_say("  ...    confirmed: done\n")
         return(id)
       }
-      cat(sprintf("  ...    not there yet (check %d of %d)\n", k, checks))
+      bt_say(sprintf("  ...    not there yet (check %d of %d)\n", k, checks))
     }
-    if (attempt < attempts) cat("  ...    not done: trying again\n")
+    if (attempt < attempts) bt_say("  ...    not done: trying again\n")
   }
   stop("Could not ", what, ": the server kept timing out. Nothing is lost: run save_breedbase() ",
        "again later; what was already saved is found and the save continues.", call. = FALSE)
@@ -1262,9 +1265,9 @@ bb_create_folder <- function(con, prog, folder, saved = "the trial") {
                          "'. Choose another `folder`.")
   )
   if (isTRUE(attr(folder_id, "existed"))) {
-    cat("  [OK]   folder '", folder, "' already exists: ", saved, " is saved inside it\n", sep = "")
+    bt_say("  [OK]   folder '", folder, "' already exists: ", saved, " is saved inside it\n", sep = "")
   } else {
-    cat("  [OK]   folder '", folder, "' created\n", sep = "")
+    bt_say("  [OK]   folder '", folder, "' created\n", sep = "")
   }
   as.character(folder_id)
 }

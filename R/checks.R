@@ -37,7 +37,7 @@ check_result <- function(what, ok, section = NULL, note = FALSE) {
   if (is.null(section)) section <- if (is.null(.check_env$section)) "" else .check_env$section
   passed <- isTRUE(ok)
   status <- if (passed) "OK" else if (isTRUE(note)) "NOTE" else "FAIL"
-  cat(sprintf("  %-7s%s\n", paste0("[", status, "]"), what))
+  bt_say(sprintf("  %-7s%s\n", paste0("[", status, "]"), what))
   row <- data.frame(section = as.character(section), check = as.character(what),
                     status = status, stringsAsFactors = FALSE)
   .check_env$log <- rbind(.check_env$log, row)
@@ -160,14 +160,14 @@ check_setup <- function(out_dir = NULL) {
   # Later checks are grouped by their own section or kind of design.
   .check_env$section <- NULL
   if (ok) {
-    cat("Everything is ready to start a new design.\n")
+    bt_say("Everything is ready to start a new design.\n")
     if (length(missing) > 0) {
-      cat(sprintf("(Optional: install.packages(%s) to use the analyses that need %s.)\n",
+      bt_say(sprintf("(Optional: install.packages(%s) to use the analyses that need %s.)\n",
                   paste0("c(", paste0('"', missing, '"', collapse = ", "), ")"),
                   paste(missing, collapse = " and ")))
     }
   } else {
-    cat("Something is not ready: see the [FAIL] line above.\n")
+    bt_say("Something is not ready: see the [FAIL] line above.\n")
   }
   invisible(ok)
 }
@@ -193,7 +193,7 @@ check_setup <- function(out_dir = NULL) {
 check_section <- function(name) {
   old <- .check_env$section
   .check_env$section <- if (is.null(name)) NULL else as.character(name)
-  if (!is.null(name)) cat("\n== ", name, " ==\n", sep = "")
+  if (!is.null(name)) bt_say("\n== ", name, " ==\n", sep = "")
   invisible(old)
 }
 
@@ -336,7 +336,7 @@ check_design.augmented_row_column_design <- function(design, section = NULL) {
   en <- d[d$is_control == 0, ]
   R <- max(d$row)
   C <- max(d$col)
-  cat("Checking the augmented row-column design\n")
+  bt_say("Checking the augmented row-column design\n")
   ok <- c(
     check_result("every plot used exactly once", !anyDuplicated(paste(d$row, d$col)) && nrow(d) == R * C, sec),
     check_result("every entry planted exactly once",
@@ -409,7 +409,7 @@ check_design.augmented_prep_design <- function(design, section = NULL) {
   d <- design$design
   inp <- design$input
   s <- design$summary
-  cat("Checking the augmented p-rep design\n")
+  bt_say("Checking the augmented p-rep design\n")
   sizes <- table(paste(d$location, d$block))
   by_loc <- split(as.integer(sizes), sub(" .*", "", names(sizes)))
   ok <- c(
@@ -436,7 +436,7 @@ check_design.resolvable_row_column_design <- function(design, section = NULL) {
   d <- design$design
   s <- design$summary
   real <- d[d$is_filler == 0, ]
-  cat("Checking the resolvable row-column design\n")
+  bt_say("Checking the resolvable row-column design\n")
   ok <- c(
     check_result("every treatment once in every replicate",
                  all(table(real$all_entries, real$replicate) == 1), sec),

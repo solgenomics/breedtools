@@ -289,8 +289,8 @@ design_options <- function(n_entries, design = c("augmented_row_column", "prep",
       best <- choices$square_check_blocks & !duplicated(paste(group, choices$square_check_blocks))
       choices <- choices[order(!best), ]
       group <- paste(choices$n_checks, choices$n_reps, choices$n_repeated, sep = "/")
-      within_group <- ave(seq_len(nrow(choices)), group, FUN = seq_along)
-      choices <- choices[head(order(within_group, seq_len(nrow(choices))), n_options), ]
+      within_group <- stats::ave(seq_len(nrow(choices)), group, FUN = seq_along)
+      choices <- choices[utils::head(order(within_group, seq_len(nrow(choices))), n_options), ]
       pieces[[kind]] <- choices
     }
     diagnostics[[kind]] <- tibble::tibble(design = kind, options = nrow(choices),
@@ -421,7 +421,7 @@ do_option_augmented <- function(n, checks, fields, locations, min_df, limit, all
       seen_checks <- union(seen_checks, vapply(unequal, function(x) x$n_checks, integer(1)))
     }
     # Search the smallest fields first; keep a pool larger than the shortlist.
-    wanted <- head(checks, limit)
+    wanted <- utils::head(checks, limit)
     if (is.na(stop_area) && length(choices) >= 10L * limit && all(wanted %in% seen_checks)) {
       stop_area <- as.double(r) * c
     }
@@ -516,7 +516,7 @@ do_option_prep <- function(n, fields, locations, sizes, proportions, min_df, lim
       sizes_here <- prep_balanced_counts(plots, blocks)
       if (sum(sizes_here * (sizes_here - 1) / 2) * locations > as.double(n) * (n - 1) / 2) next
       fits <- fields[fields$rows == ceiling(plots / fields$cols), , drop = FALSE]
-      fits <- head(fits, 3L * limit)
+      fits <- utils::head(fits, 3L * limit)
       for (i in seq_len(nrow(fits))) {
         r <- fits$rows[i]; c <- fits$cols[i]
         args <- list(locations = paste0("Location_", seq_len(locations)), method = "search",
@@ -542,7 +542,7 @@ do_option_resolvable <- function(n, checks, fields, locations, reps, min_df, lim
         s <- if (layout == "horizontal") fields$cols / rep else fields$cols
         df <- rep * v - rep * (k + s - 1) - (v - 1)
         keep <- k == floor(k) & s == floor(s) & k >= 2 & s >= 2 & k * s >= v & df >= min_df
-        for (i in head(which(keep), 3L * limit)) {
+        for (i in utils::head(which(keep), 3L * limit)) {
           args <- list(n_reps = rep, rows_per_rep = k[i], cols_per_rep = s[i], replicate_layout = layout)
           choices[[length(choices) + 1L]] <- do_option_row("resolvable", n, check,
             fields$rows[i], fields$cols[i], locations, rep, rep * v, check * rep,

@@ -235,8 +235,8 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
   }
   if (!inherits(con, "breedbase_connection")) stop("`con` must come from breedbase_login().", call. = FALSE)
 
-  cat("Checking phenotypes before saving to ", con$url, "\n", sep = "")
-  cat("  [OK]   ", nrow(obs), " values of ", length(unique(all_obs$trait)), " trait",
+  bt_say("Checking phenotypes before saving to ", con$url, "\n", sep = "")
+  bt_say("  [OK]   ", nrow(obs), " values of ", length(unique(all_obs$trait)), " trait",
       if (length(unique(all_obs$trait)) > 1) "s" else "", " on ", length(unique(obs$plot_name)), " plots",
       if (nrow(empty)) paste0(" (", nrow(empty), " empty cells)"), "\n", sep = "")
   web_ok <- TRUE
@@ -266,7 +266,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
       paste(utils::head(missing_plots, 10), collapse = ", "), if (length(missing_plots) > 10) ", ..." else "",
       ". Save the trial first (save_breedbase()) and use its plot names (phenotype_template())."))
   } else {
-    cat("  [OK]   all ", length(plot_names), " plots are in Breedbase\n", sep = "")
+    bt_say("  [OK]   all ", length(plot_names), " plots are in Breedbase\n", sep = "")
   }
   missing_traits <- names(trait_ids)[is.na(trait_ids)]
   if (length(missing_traits)) {
@@ -276,7 +276,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
       ". Use the trait name as shown in Breedbase, e.g. \"fresh root yield\" or ",
       "\"fresh root yield|CO_334:0000013\"."))
   } else {
-    for (t in names(trait_ids)) cat("  [OK]   trait '", t, "' (id ", trait_ids[[t]], ")\n", sep = "")
+    for (t in names(trait_ids)) bt_say("  [OK]   trait '", t, "' (id ", trait_ids[[t]], ")\n", sep = "")
   }
   if (length(problems)) stop(paste(problems, collapse = "\n"), call. = FALSE)
 
@@ -302,23 +302,23 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
   n_new <- sum(obs$status == "new")
   n_same <- sum(obs$status == "unchanged")
   n_changed <- sum(obs$status == "changed")
-  cat("  [OK]   ", n_new, " new values", if (n_same) paste0(", ", n_same, " already stored with the same value (not sent again)"),
+  bt_say("  [OK]   ", n_new, " new values", if (n_same) paste0(", ", n_same, " already stored with the same value (not sent again)"),
       "\n", sep = "")
   if (n_changed) {
     if (!isTRUE(overwrite)) {
-      cat("You have decided to not replace. Phenotypes are already there.\n")
+      bt_say("You have decided to not replace. Phenotypes are already there.\n")
       return(invisible(NULL))
     }
     ch <- obs[obs$status == "changed", , drop = FALSE]
     show <- utils::head(paste0(ch$plot_name, " / ", ch$trait, ": ", ch$stored_value, " -> ", ch$value), 10)
-    cat("  [OK]   ", n_changed, " stored values will be replaced (overwrite = TRUE), e.g. ", show[1], "\n", sep = "")
+    bt_say("  [OK]   ", n_changed, " stored values will be replaced (overwrite = TRUE), e.g. ", show[1], "\n", sep = "")
   }
   if (nrow(to_remove)) {
     if (isTRUE(remove_empty)) {
-      cat("  [OK]   ", nrow(to_remove), " stored values will be deleted (empty in `data`, remove_empty = TRUE), e.g. ",
+      bt_say("  [OK]   ", nrow(to_remove), " stored values will be deleted (empty in `data`, remove_empty = TRUE), e.g. ",
           to_remove$plot_name[1], " / ", to_remove$trait[1], " = ", to_remove$stored_value[1], "\n", sep = "")
     } else {
-      cat("  [NOTE] ", nrow(to_remove), " cells are empty in `data` but have a value in Breedbase; those values are ",
+      bt_say("  [NOTE] ", nrow(to_remove), " cells are empty in `data` but have a value in Breedbase; those values are ",
           "kept (remove_empty = TRUE deletes them)\n", sep = "")
       to_remove <- to_remove[0, , drop = FALSE]
     }
@@ -350,11 +350,11 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
     out
   }
   if (!nrow(send_new) && !nrow(send_put) && !nrow(to_remove)) {
-    cat("Nothing to write: Breedbase already has these values.\n")
+    bt_say("Nothing to write: Breedbase already has these values.\n")
     return(invisible(summary_of(found = NULL)))
   }
   if (isTRUE(dry_run)) {
-    cat("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
+    bt_say("Dry run: everything is ready to save ", plan, ". Nothing was written.\n", sep = "")
     return(invisible(summary_of(found = NULL)))
   }
   if (isTRUE(confirm)) {
@@ -381,7 +381,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
       }
     )
     if (length(groups) > 1) {
-      cat(sprintf("  ...    batch %d of %d saved: %d/%d values\n", g, length(groups), max(idx), length(records)))
+      bt_say(sprintf("  ...    batch %d of %d saved: %d/%d values\n", g, length(groups), max(idx), length(records)))
     }
   }
   # Changed values: BrAPI PUT /observations, keyed by the stored observation.
@@ -390,7 +390,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
       payload <- stats::setNames(lapply(idx, function(i) as_record(send_put, i)), send_put$observation_db_id[idx])
       bb_put(con, "observations", payload, what = "replace stored phenotypes")
     }
-    cat("  [OK]   ", nrow(send_put), " stored values replaced\n", sep = "")
+    bt_say("  [OK]   ", nrow(send_put), " stored values replaced\n", sep = "")
   }
   # Empty cells with a stored value: Breedbase's upload with "overwrite" and
   # "remove values" (BrAPI cannot delete observations). The rows of these
@@ -399,7 +399,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
     bb_remove_values(con, all_obs[all_obs$plot_name %in% to_remove$plot_name, , drop = FALSE], trait_full)
     left <- bb_stored_values(con, to_remove)
     n_left <- sum(paste(to_remove$observation_unit_db_id, to_remove$observation_variable_db_id, sep = "\r") %in% left$key)
-    cat("  ", if (n_left) "[FAIL]" else "[OK]  ", " ", nrow(to_remove) - n_left, " of ", nrow(to_remove),
+    bt_say("  ", if (n_left) "[FAIL]" else "[OK]  ", " ", nrow(to_remove) - n_left, " of ", nrow(to_remove),
         " stored values deleted\n", sep = "")
   }
 
@@ -407,7 +407,7 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
   out <- summary_of(found)
   for (i in seq_len(nrow(out))) {
     status <- if (out$values_found[i] >= out$values_sent[i]) "[OK]  " else "[FAIL]"
-    cat(sprintf("  %s trait '%s': %d of %d values stored (%d new, %d replaced, %d unchanged, %d deleted)\n",
+    bt_say(sprintf("  %s trait '%s': %d of %d values stored (%d new, %d replaced, %d unchanged, %d deleted)\n",
                 status, out$trait[i], out$values_found[i], out$values_sent[i], out$new[i], out$replaced[i],
                 out$unchanged[i], out$removed[i]))
   }
@@ -452,10 +452,10 @@ breedbase_refresh <- function(con, views = c("phenotypes", "fullview"), quiet = 
   ok <- !inherits(res, "breedbase_error")
   if (!isTRUE(quiet)) {
     if (ok) {
-      cat("  [OK]   Breedbase is refreshing its phenotype cache: the values appear on the trial pages",
+      bt_say("  [OK]   Breedbase is refreshing its phenotype cache: the values appear on the trial pages",
           "and in the search wizard in a few minutes\n")
     } else {
-      cat("  [NOTE] The values are saved, but the phenotype cache could not be refreshed (",
+      bt_say("  [NOTE] The values are saved, but the phenotype cache could not be refreshed (",
           conditionMessage(res), ").\n         They appear on the trial pages after the next refresh of the site, ",
           "or click \"Update\" on the Search Wizard page.\n", sep = "")
     }

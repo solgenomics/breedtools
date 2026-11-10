@@ -418,12 +418,12 @@ test_that("converted field books save as a new trial and round-trip through Bree
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    invisible(capture.output(checked <- save_breedbase(converted, con, program = "IITA",
+    invisible(capture_msgs(checked <- save_breedbase(converted, con, program = "IITA",
       trial_name = "AG_2026", year = 2026, location = "Ibadan",
       description = "Trial generated with agricolae", dry_run = TRUE)))
     expect_length(fake$state$studies, 0)
     expect_length(fake$state$plots, 0)
-    invisible(capture.output(saved <- save_breedbase(converted, con, program = "IITA",
+    invisible(capture_msgs(saved <- save_breedbase(converted, con, program = "IITA",
       trial_name = "AG_2026", year = 2026, location = "Ibadan",
       description = "Trial generated with agricolae", confirm = FALSE)))
     expect_length(fake$state$studies, 1)
@@ -435,7 +435,7 @@ test_that("converted field books save as a new trial and round-trip through Bree
     expected <- phenotype_template(converted, "AG_2026", location = "Ibadan")
     expected$trial_name <- NULL
     expect_equal(readback[names(expected)], expected)
-    expect_error(capture.output(save_breedbase(converted, con, program = "IITA",
+    expect_error(capture_msgs(save_breedbase(converted, con, program = "IITA",
       trial_name = "AG_2026", year = 2026, location = "Ibadan",
       description = "Trial generated with agricolae", confirm = FALSE)), "already exists")
   })
@@ -452,9 +452,9 @@ test_that("prepared agricolae trials save using recorded metadata and allow expl
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    invisible(capture.output(save_breedbase(trial, con, dry_run = TRUE)))
+    invisible(capture_msgs(save_breedbase(trial, con, dry_run = TRUE)))
     expect_length(fake$state$studies, 0)
-    invisible(capture.output(saved <- save_breedbase(trial, con, confirm = FALSE)))
+    invisible(capture_msgs(saved <- save_breedbase(trial, con, confirm = FALSE)))
     expect_equal(saved$plots_found, 4)
     expect_identical(fake$state$studies[[1]]$studyName, "PREPARED_2026")
     expect_identical(fake$state$studies[[1]]$trialDbId, "500")
@@ -462,7 +462,7 @@ test_that("prepared agricolae trials save using recorded metadata and allow expl
     expected <- phenotype_template(trial)
     expected$trial_name <- NULL
     expect_equal(actual[names(expected)], expected)
-    invisible(capture.output(save_breedbase(trial, con, trial_name = "OVERRIDE_2027", year = 2027,
+    invisible(capture_msgs(save_breedbase(trial, con, trial_name = "OVERRIDE_2027", year = 2027,
       folder = NULL, location = "Ubiaja", description = "Another field", confirm = FALSE)))
     expect_identical(fake$state$studies[[2]]$studyName, "OVERRIDE_2027")
     expect_identical(fake$state$studies[[2]]$trialDbId, "10")
@@ -537,7 +537,7 @@ test_that("login, checks and saving work against a fake Breedbase", {
 
     # Dry run with a connection checks everything and writes nothing.
     n_before <- length(fake$state$requests)
-    out <- capture.output(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+    out <- capture_msgs(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
                                                 trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
                                                 create_folder = TRUE, dry_run = TRUE,
                                                 description = "Test trial"))
@@ -546,7 +546,7 @@ test_that("login, checks and saving work against a fake Breedbase", {
     expect_length(posts, 0)
 
     # Real save.
-    out <- capture.output(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+    out <- capture_msgs(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
                                                 trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
                                                 create_folder = TRUE, confirm = FALSE,
                                                 description = "Test trial"))
@@ -561,7 +561,7 @@ test_that("login, checks and saving work against a fake Breedbase", {
                            function(r) identical(r$auth, "Bearer TOKEN123"), logical(1))))
 
     # Saving again with the same name is refused before writing.
-    expect_error(capture.output(save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+    expect_error(capture_msgs(save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
                                                trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
                                                confirm = FALSE,
                                                description = "Test trial")), "already exists")
@@ -574,13 +574,13 @@ test_that("clear errors for missing accessions, folders, locations and logins", 
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    expect_error(capture.output(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Ibadan", confirm = FALSE,
+    expect_error(capture_msgs(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Ibadan", confirm = FALSE,
     description = "Test trial")),
                  "12 of 112 entries/checks are not accessions")
-    expect_error(capture.output(save_breedbase(rc, con, "IITA", "Missing", "T1", 2026, "Ibadan", confirm = FALSE,
+    expect_error(capture_msgs(save_breedbase(rc, con, "IITA", "Missing", "T1", 2026, "Ibadan", confirm = FALSE,
     description = "Test trial")),
                  "create_folder = TRUE")
-    expect_error(capture.output(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Mars", confirm = FALSE,
+    expect_error(capture_msgs(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Mars", confirm = FALSE,
     description = "Test trial")),
                  "Location 'Mars' was not found")
     bad <- con
@@ -635,9 +635,9 @@ test_that("plot names already in the database are refused before writing", {
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Ibadan", confirm = FALSE,
+    capture_msgs(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "Ibadan", confirm = FALSE,
     description = "Test trial"))
-    expect_error(capture.output(save_breedbase(rc, con, "IITA", "Old folder", "T2", 2026, "Ibadan",
+    expect_error(capture_msgs(save_breedbase(rc, con, "IITA", "Old folder", "T2", 2026, "Ibadan",
                                                plot_names = vapply(fake$state$plots, `[[`, "", "observationUnitName")[
                                                  order(vapply(fake$state$plots, function(u) as.integer(u$observationUnitPosition$observationLevel$levelCode), 1L))],
                                                confirm = FALSE,
@@ -663,7 +663,7 @@ test_that("breedbase_check reports every problem at once, with suggestions", {
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
 
-    out <- capture.output(res <- breedbase_check(con, accessions = c(paste0("G", 1:100), "tmeb419", "X9", "G1"),
+    out <- capture_msgs(res <- breedbase_check(con, accessions = c(paste0("G", 1:100), "tmeb419", "X9", "G1"),
                                                  location = "ibadan", program = "IITA", folder = "New one",
                                                  trial_name = "T1"))
     expect_false(attr(res, "ok"))
@@ -683,13 +683,13 @@ test_that("breedbase_check reports every problem at once, with suggestions", {
     # A design can be given directly; all good -> ok.
     rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4,
                                       n_candidates = 5, seed = 1)
-    out <- capture.output(res <- breedbase_check(con, rc, location = "Ibadan"))
+    out <- capture_msgs(res <- breedbase_check(con, rc, location = "Ibadan"))
     expect_true(attr(res, "ok"))
     expect_true(any(grepl("plot names NOT checked", out)))    # no trial name: plot names unknown
     named <- add_plot_names(rc, "T1", location = "Ibadan")
-    out <- capture.output(res <- breedbase_check(con, named, location = "Ibadan", trial_name = "T1"))
+    out <- capture_msgs(res <- breedbase_check(con, named, location = "Ibadan", trial_name = "T1"))
     expect_true(any(grepl("^READY: everything checked can be saved .*1 trial name, 144 plot names\\)", out)))
-    out <- capture.output(res <- breedbase_check(con, c(paste0("G", 1:108), paste0("C", 1:4)), location = "Ibadan",
+    out <- capture_msgs(res <- breedbase_check(con, c(paste0("G", 1:108), paste0("C", 1:4)), location = "Ibadan",
                                                  plot_names = c("P1", "P2", "P1")))
     expect_equal(res$status[res$what == "plot" & res$name == "P1"], c("REPEATED", "OK"))
     expect_true(any(grepl("^NOT READY: fix 1 problem \\(1 plot name", out)))
@@ -705,7 +705,7 @@ test_that("save_breedbase lists location and accession problems together", {
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    err <- tryCatch(capture.output(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "ibadan",
+    err <- tryCatch(capture_msgs(save_breedbase(rc, con, "IITA", "Old folder", "T1", 2026, "ibadan",
                                                   confirm = FALSE, description = "Test trial")),
                     error = conditionMessage)
     expect_match(err, "Location 'ibadan' was not found.*did you mean 'Ibadan'")
@@ -721,14 +721,14 @@ test_that("slow servers: searches that time out are split and retried", {
   rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    out <- capture.output(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
+    out <- capture_msgs(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT 2026",
                                                 trial_name = "AYT_2026_Ibadan", year = 2026, location = "Ibadan",
                                                 create_folder = TRUE, dry_run = TRUE, description = "Test trial"))
     expect_true(any(grepl("all 112 entries and checks exist as accessions", out)))
     expect_true(any(grepl("searched 112 accessions in [0-9]+ batches .*split and retried", out)))
     # Found accessions are remembered: a second check searches nothing.
     n_search <- length(Filter(function(r) r$path == "search/germplasm", fake$state$requests))
-    out2 <- capture.output(breedbase_check(con, accessions = rc))
+    out2 <- capture_msgs(breedbase_check(con, accessions = rc))
     expect_true(any(grepl("all 112 accessions were already found in this session", out2)))
     expect_equal(length(Filter(function(r) r$path == "search/germplasm", fake$state$requests)), n_search)
     sizes <- vapply(Filter(function(r) r$path == "search/germplasm", fake$state$requests),
@@ -740,7 +740,7 @@ test_that("slow servers: searches that time out are split and retried", {
     dead <- fake_breedbase(max_search = 0)
     httr2::with_mocked_responses(dead$mock, {
       con2 <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-      expect_error(capture.output(breedbase_check(con2, accessions = c("G1", "G2"))),
+      expect_error(capture_msgs(breedbase_check(con2, accessions = c("G1", "G2"))),
                    "HTTP 504.*too slow or busy")
     })
   })
@@ -760,7 +760,7 @@ test_that("timeouts while writing: the result is checked, retried, and a re-run 
   fake <- fake_breedbase(slow_writes = c("trials", "studies", "observationunits"))
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    out <- capture.output(res <- save(con))
+    out <- capture_msgs(res <- save(con))
   })
   expect_equal(res$plots_found, 144)
   expect_equal(sum(vapply(fake$state$folders, `[[`, "", "trialName") == "AYT_2026"), 1)
@@ -773,7 +773,7 @@ test_that("timeouts while writing: the result is checked, retried, and a re-run 
   fake <- fake_breedbase(lost_writes = c("trials", "studies", "observationunits"))
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    out <- capture.output(res <- save(con))
+    out <- capture_msgs(res <- save(con))
   })
   expect_equal(res$plots_found, 144)
   expect_equal(n_studies(fake), 1)
@@ -789,11 +789,11 @@ test_that("timeouts while writing: the result is checked, retried, and a re-run 
       fake$mock(req)
     }
     httr2::with_mocked_responses(lose_all, {
-      expect_error(capture.output(save(con)), "kept timing out.*run save_breedbase\\(\\) again")
+      expect_error(capture_msgs(save(con)), "kept timing out.*run save_breedbase\\(\\) again")
     })
     expect_equal(n_studies(fake), 1)
     expect_length(fake$state$plots, 0)
-    out <- capture.output(res <- save(con))
+    out <- capture_msgs(res <- save(con))
   })
   expect_true(any(grepl("exists without plots", out)))
   expect_equal(res$plots_found, 144)
@@ -808,13 +808,13 @@ test_that("an existing trial is reported; an existing folder is used", {
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", folder = "Old folder", trial_name = "T_2026",
+    capture_msgs(save_breedbase(rc, con, program = "IITA", folder = "Old folder", trial_name = "T_2026",
                                   year = 2026, location = "Ibadan", confirm = FALSE, description = "Test"))
     # The folder existed: no new folder, the trial is inside it.
     expect_equal(sum(vapply(fake$state$folders, `[[`, "", "trialName") == "Old folder"), 1)
     expect_equal(fake$state$studies[[1]]$trialDbId, "500")
 
-    out <- capture.output(res <- breedbase_check(con, accessions = rc, location = "Ibadan",
+    out <- capture_msgs(res <- breedbase_check(con, accessions = rc, location = "Ibadan",
                                                  program = "IITA", folder = "Old folder", trial_name = "T_2026"))
     expect_false(attr(res, "ok"))
     expect_equal(res$status[res$what == "trial"], "TAKEN")
@@ -835,7 +835,7 @@ test_that("an existing trial is reported; an existing folder is used", {
       fake$mock(req)
     }
     httr2::with_mocked_responses(listing_hides_new, {
-      out <- capture.output(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT_2026",
+      out <- capture_msgs(res <- save_breedbase(rc, con, program = "IITA", folder = "AYT_2026",
                                                   trial_name = "T2_2026", year = 2026, location = "Ibadan",
                                                   create_folder = TRUE, confirm = FALSE, description = "Test"))
     })
@@ -845,7 +845,7 @@ test_that("an existing trial is reported; an existing folder is used", {
 
     # A trial left without plots is a note, not a problem.
     fake$state$studies[[3]] <- list(studyDbId = "950", studyName = "EMPTY_2026")
-    out <- capture.output(res <- breedbase_check(con, trial_name = "EMPTY_2026"))
+    out <- capture_msgs(res <- breedbase_check(con, trial_name = "EMPTY_2026"))
     expect_true(attr(res, "ok"))
     expect_true(any(grepl("\\[NOTE\\] trial 'EMPTY_2026' exists without plots", out)))
   })
@@ -857,7 +857,7 @@ test_that("the folder is optional: the trial goes directly in the program", {
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    out <- capture.output(res <- save_breedbase(rc, con, program = "IITA", trial_name = "NoFolder_2026",
+    out <- capture_msgs(res <- save_breedbase(rc, con, program = "IITA", trial_name = "NoFolder_2026",
                                                 year = 2026, location = "Ibadan", confirm = FALSE,
                                                 description = "Test"))
   })
@@ -908,20 +908,20 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     # Plots not saved yet: listed together with a wrong trait.
     bad <- sheet
     names(bad)[names(bad) == "fresh root yield"] <- "root yield"
-    err <- tryCatch(capture.output(save_breedbase_phenotypes(bad, con, confirm = FALSE)), error = conditionMessage)
+    err <- tryCatch(capture_msgs(save_breedbase_phenotypes(bad, con, confirm = FALSE)), error = conditionMessage)
     expect_match(err, "144 of 144 plots are not in Breedbase")
     expect_match(err, "not found in Breedbase: 'root yield'")
 
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
     n_before <- length(fake$state$requests)
-    out <- capture.output(res <- save_breedbase_phenotypes(sheet, con, dry_run = TRUE))
+    out <- capture_msgs(res <- save_breedbase_phenotypes(sheet, con, dry_run = TRUE))
     expect_true(any(grepl("Nothing was written", out)))
     expect_length(fake$state$observations, 0)
 
     old_options <- options(breedtools.observation_batch = 100)
     on.exit(options(old_options), add = TRUE)
-    out <- capture.output(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
+    out <- capture_msgs(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
     expect_length(fake$state$observations, 2 * 144 - 4)
     expect_equal(res$values_found, res$values_sent)
     expect_equal(res$observation_variable_db_id, c("70001", "70002"))
@@ -932,7 +932,7 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
 
     # Saving the same values again: nothing is sent (no duplicates).
     n_obs <- length(fake$state$observations)
-    out <- capture.output(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
+    out <- capture_msgs(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
     expect_true(any(grepl("Nothing to write", out)))
     expect_length(fake$state$observations, n_obs)
     expect_equal(res$unchanged, c(140L, 144L))
@@ -945,7 +945,7 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     stored_before <- fake$state$observations
     n_requests <- length(fake$state$requests)
     completed <- 0L
-    out <- capture.output(for (s in list(changed, mixed)) {
+    out <- capture_msgs(for (s in list(changed, mixed)) {
       result <- withVisible(save_breedbase_phenotypes(s, con, confirm = FALSE))
       completed <- completed + 1L
     })
@@ -961,7 +961,7 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     expect_length(writes, 0L)
 
     # Changed values are still replaced when overwrite is enabled.
-    out <- capture.output(res <- save_breedbase_phenotypes(changed, con, confirm = FALSE, overwrite = TRUE))
+    out <- capture_msgs(res <- save_breedbase_phenotypes(changed, con, confirm = FALSE, overwrite = TRUE))
     expect_length(fake$state$observations, n_obs)            # replaced, not added
     expect_equal(res$replaced, c(3L, 0L))
     expect_equal(res$values_found, res$values_sent)
@@ -972,14 +972,14 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     # Empty cells with stored values: kept and reported; deleting needs overwrite.
     blank <- changed
     blank$`fresh root yield`[5] <- NA
-    out <- capture.output(save_breedbase_phenotypes(blank, con, confirm = FALSE))
+    out <- capture_msgs(save_breedbase_phenotypes(blank, con, confirm = FALSE))
     expect_true(any(grepl("1 cells are empty in `data` but have a value in Breedbase", out)))
     expect_error(save_breedbase_phenotypes(blank, con, remove_empty = TRUE), "needs `overwrite = TRUE`")
 
     # Long data with time stamps: repeated measurements on other dates.
     long <- data.frame(plot = sheet$plot_name[1:10], trait = "fresh root yield", value = 20:29,
                        when = as.Date("2026-09-01"))
-    out <- capture.output(res <- save_breedbase_phenotypes(long, con, plot = "plot", trait = "trait",
+    out <- capture_msgs(res <- save_breedbase_phenotypes(long, con, plot = "plot", trait = "trait",
                                                            value = "value", timestamp = "when", confirm = FALSE))
     expect_equal(res$values_found, 10)
     expect_equal(fake$state$observations[[length(fake$state$observations)]]$observationTimeStamp,
@@ -1076,13 +1076,13 @@ test_that("first stage saved as a trait of the field plots; second stage as an a
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
-    out <- capture.output(res <- save_breedbase_first_stage(v, con, as_trait = adjusted, confirm = FALSE))
+    out <- capture_msgs(res <- save_breedbase_first_stage(v, con, as_trait = adjusted, confirm = FALSE))
     expect_equal(res$values_found, 144)
     expect_equal(unique(vapply(fake$state$observations, `[[`, "", "observationVariableDbId")), "70003")
 
-    out <- capture.output(res <- save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means",
+    out <- capture_msgs(res <- save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means",
                                                          program = "IITA", description = "Row-column model",
                                                          confirm = FALSE))
     expect_equal(res$rows_found, 112)
@@ -1098,12 +1098,12 @@ test_that("first stage saved as a trait of the field plots; second stage as an a
 
     # In a folder: a missing folder stops before writing, unless created;
     # the analysis is then moved into it.
-    expect_error(capture.output(save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means_f",
+    expect_error(capture_msgs(save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means_f",
                                                         program = "IITA", description = "x", confirm = FALSE,
                                                         folder = "Analyses 2026")),
                  "Folder 'Analyses_2026' was not found")
     expect_length(fake$state$analyses, 1)
-    out <- capture.output(res_f <- save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means_f",
+    out <- capture_msgs(res_f <- save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means_f",
                                                            program = "IITA", description = "x", confirm = FALSE,
                                                            folder = "Analyses 2026", create_folder = TRUE))
     fid <- vapply(fake$state$folders, `[[`, "", "trialDbId")[vapply(fake$state$folders, `[[`, "", "trialName") == "Analyses_2026"]
@@ -1112,7 +1112,7 @@ test_that("first stage saved as a trait of the field plots; second stage as an a
     expect_true(any(grepl("analysis put in folder 'Analyses_2026'", out)))
 
     # First stage as an analysis of the field plots ("Analysis of: plots").
-    out <- capture.output(res1 <- save_breedbase_analysis(v, con, analysis_name = "AYT_2026_stage1", program = "IITA",
+    out <- capture_msgs(res1 <- save_breedbase_analysis(v, con, analysis_name = "AYT_2026_stage1", program = "IITA",
                                                           description = "Row-column model", level = "plot",
                                                           estimate = "blue", confirm = FALSE))
     a1 <- Filter(function(a) a$name == "AYT_2026_stage1", fake$state$analyses)[[1]]
@@ -1121,17 +1121,17 @@ test_that("first stage saved as a trait of the field plots; second stage as an a
     expect_equal(res1$rows_found, 144)
     bad_plots <- v
     bad_plots$plot_name[1] <- "NOT_A_PLOT"
-    expect_error(capture.output(save_breedbase_analysis(bad_plots, con, analysis_name = "X1", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(bad_plots, con, analysis_name = "X1", program = "IITA",
                                                         description = "x", level = "plot", confirm = FALSE)),
                  "1 of 144 plots are not in Breedbase: NOT_A_PLOT")
 
     # The same name again is refused before writing; unknown traits are listed.
-    expect_error(capture.output(save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means",
+    expect_error(capture_msgs(save_breedbase_analysis(means, con, analysis_name = "AYT_2026_means",
                                                         program = "IITA", description = "x", confirm = FALSE)),
                  "already exists")
     bad <- means
     names(bad)[2] <- "root weight"
-    expect_error(capture.output(save_breedbase_analysis(bad, con, analysis_name = "Other", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(bad, con, analysis_name = "Other", program = "IITA",
                                                         description = "x", confirm = FALSE)),
                  "not found in Breedbase: 'root weight'")
   })
@@ -1147,21 +1147,21 @@ test_that("first stage: the adjusted trait is found or created (trait + statisti
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
     a <- breedbase_adjusted_trait(con, "fresh root yield")
     expect_equal(a$status, "missing")
     expect_equal(a$adjusted_trait, "fresh root yield|Adjusted Means from Spatial Correction using SpATS R")
 
     # A dry run reports the new trait and creates nothing.
-    out <- capture.output(save_breedbase_first_stage(v, con, dry_run = TRUE))
+    out <- capture_msgs(save_breedbase_first_stage(v, con, dry_run = TRUE))
     expect_true(any(grepl("\\[NEW\\]  trait 'fresh root yield\\|Adjusted Means.*will be created", out)))
     expect_length(fake$state$composed, 0)
-    expect_error(capture.output(save_breedbase_first_stage(v, con, create_trait = FALSE, confirm = FALSE)),
+    expect_error(capture_msgs(save_breedbase_first_stage(v, con, create_trait = FALSE, confirm = FALSE)),
                  "do not exist")
 
     # Saving creates the composed trait (trait id + statistic id) and stores the values under it.
-    out <- capture.output(res <- save_breedbase_first_stage(v, con, confirm = FALSE))
+    out <- capture_msgs(res <- save_breedbase_first_stage(v, con, confirm = FALSE))
     expect_length(fake$state$composed, 1)
     expect_setequal(fake$state$composed[[1]]$components, c("70001", "80054"))
     expect_equal(res$values_found, 144)
@@ -1223,9 +1223,9 @@ test_that("after saving phenotypes the Breedbase phenotype cache is refreshed", 
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
-    out <- capture.output(save_breedbase_phenotypes(sheet, con, confirm = FALSE))
+    out <- capture_msgs(save_breedbase_phenotypes(sheet, con, confirm = FALSE))
     expect_equal(fake$state$refreshed, "phenotypes")
     expect_true(any(grepl("refreshing its phenotype cache", out)))
   })
@@ -1233,9 +1233,9 @@ test_that("after saving phenotypes the Breedbase phenotype cache is refreshed", 
   fake2 <- fake_breedbase(site_auth = c("tester", "webpw"))
   httr2::with_mocked_responses(fake2$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
-    out <- capture.output(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
+    out <- capture_msgs(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE))
     expect_equal(res$values_found, 144)
     expect_true(any(grepl("\\[NOTE\\] The values are saved", out)))
     expect_true(any(grepl("Search Wizard", out)))
@@ -1264,16 +1264,16 @@ test_that("statistics come from the server: other names and ids work, nothing is
     a <- breedbase_adjusted_trait(con, "fresh root yield", create = TRUE)
     expect_equal(a$adjusted_trait, "fresh root yield|Spatially corrected values using SpATS")
     expect_setequal(fake$state$composed[[1]]$components, c("70001", "5"))
-    out <- capture.output(save_breedbase_analysis(means, con, analysis_name = "A1", program = "IITA",
+    out <- capture_msgs(save_breedbase_analysis(means, con, analysis_name = "A1", program = "IITA",
                                                   description = "x", confirm = FALSE))
     expect_equal(fake$state$analyses[[1]]$form$upload_new_analysis_statistical_ontology_term,
                  "Adjusted means from BLUEs|SGNSTAT:0000902")
     # BLUPs asked, but this Breedbase has none: stop and list its statistics.
-    expect_error(capture.output(save_breedbase_analysis(means, con, analysis_name = "A2", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(means, con, analysis_name = "A2", program = "IITA",
                                                         description = "x", estimate = "blup", confirm = FALSE)),
                  "No BLUP statistic.*Adjusted means from BLUEs; Spatially corrected values using SpATS")
     # A statistic given by name is checked against the server.
-    expect_error(capture.output(save_breedbase_analysis(means, con, analysis_name = "A3", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(means, con, analysis_name = "A3", program = "IITA",
                                                         description = "x", statistic = "Magic means",
                                                         confirm = FALSE)), "not a term of the Breedbase statistics ontology")
   })
@@ -1281,7 +1281,7 @@ test_that("statistics come from the server: other names and ids work, nothing is
   fake2 <- fake_breedbase()
   httr2::with_mocked_responses(fake2$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase_analysis(means, con, analysis_name = "A4", program = "IITA", description = "x",
+    capture_msgs(save_breedbase_analysis(means, con, analysis_name = "A4", program = "IITA", description = "x",
                                            estimate = "blup", confirm = FALSE))
     expect_equal(fake2$state$analyses[[1]]$form$upload_new_analysis_statistical_ontology_term,
                  "Adjusted means from BLUPs using LMER R|SGNSTAT:0000034")
@@ -1325,10 +1325,10 @@ test_that("web pages closed by a web password: the analysis upload file is writt
   fake <- fake_breedbase(site_auth = c("tester", "webpw"))
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
     f1 <- tempfile(fileext = ".csv")
-    out <- capture.output(res <- save_breedbase_analysis(stage1, con, analysis_name = "AYT_2026_stage1",
+    out <- capture_msgs(res <- save_breedbase_analysis(stage1, con, analysis_name = "AYT_2026_stage1",
                                                          program = "IITA", description = "SpATS", level = "plot",
                                                          upload_file = f1, confirm = FALSE))
     expect_true(file.exists(f1))
@@ -1343,7 +1343,7 @@ test_that("web pages closed by a web password: the analysis upload file is writt
     # Problems are still found through BrAPI before any file is written.
     bad <- means
     bad$accession[1] <- "NOT_AN_ACCESSION"
-    expect_error(capture.output(save_breedbase_analysis(bad, con, analysis_name = "X", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(bad, con, analysis_name = "X", program = "IITA",
                                                         description = "x", upload_file = tempfile(), confirm = FALSE)),
                  "not in Breedbase: NOT_AN_ACCESSION")
   })
@@ -1383,7 +1383,7 @@ test_that("breedbase_trial_plots reads a saved trial; first_stage_values checks 
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
     fake$state$studies[[1]]$studyDbId -> sid
     plots <- breedbase_trial_plots(con, "AYT_2026")
@@ -1410,7 +1410,7 @@ test_that("values are added to an existing analysis (a second trait), without du
   fake <- fake_breedbase()
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
                                   location = "Ibadan", confirm = FALSE, description = "x"))
     # Before saving: the names the analysis plots will have.
     preview <- analysis_plot_names(stage1, "S1", level = "plot")
@@ -1418,7 +1418,7 @@ test_that("values are added to an existing analysis (a second trait), without du
     expect_equal(preview$accession, stage1$accession)
     expect_equal(analysis_plot_names(stage1, "S 1")$analysis_plot_name[1], paste0("S_1_", stage1$plot_name[1]))
     # Before saving: the composed trait each trait will be stored under.
-    out <- capture.output(dr <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+    out <- capture_msgs(dr <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
                                                         description = "x", level = "plot", dry_run = TRUE))
     expect_equal(dr$traits$status, "new")
     expect_match(dr$traits$stored_as, "^fresh root yield\\|[^|]+$")
@@ -1427,17 +1427,17 @@ test_that("values are added to an existing analysis (a second trait), without du
     # Another statistic, chosen from the list: another stored name.
     blup <- "Adjusted means from BLUPs using LMER R"
     expect_true(blup %in% breedbase_statistics(con)$statistic)
-    out <- capture.output(dr2 <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+    out <- capture_msgs(dr2 <- save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
                                                          description = "x", level = "plot", dry_run = TRUE,
                                                          statistic = blup))
     expect_equal(dr2$traits$stored_as, paste0("fresh root yield|", blup))
-    expect_error(capture.output(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
+    expect_error(capture_msgs(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA",
                                                         description = "x", level = "plot", dry_run = TRUE,
                                                         statistic = "My own statistic")))
-    capture.output(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA", description = "x",
+    capture_msgs(save_breedbase_analysis(stage1, con, analysis_name = "S1", program = "IITA", description = "x",
                                            level = "plot", confirm = FALSE))
     # The composed trait now exists: a dry run shows it with its COMP id.
-    out <- capture.output(dr3 <- save_breedbase_analysis(stage1, con, analysis_name = "S1_again", program = "IITA",
+    out <- capture_msgs(dr3 <- save_breedbase_analysis(stage1, con, analysis_name = "S1_again", program = "IITA",
                                                          description = "x", level = "plot", dry_run = TRUE))
     expect_equal(dr3$traits$status, "exists")
     expect_match(dr3$traits$stored_as, paste0("^", dr$traits$stored_as, "\\|COMP:[0-9]+$"))
@@ -1455,7 +1455,7 @@ test_that("values are added to an existing analysis (a second trait), without du
     expect_equal(saved[[ytrait]], stage1[["fresh root yield"]][match(saved$plot_name, stage1$plot_name)],
                  tolerance = 1e-6)
     expect_error(breedbase_analysis_plots(con, "NOPE"), "was not found")
-    out <- capture.output(res <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
+    out <- capture_msgs(res <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
                                                                confirm = FALSE))
     expect_equal(res$plots, 144)
     # The second trait too: same statistic as the analysis, never the plain trait.
@@ -1469,11 +1469,11 @@ test_that("values are added to an existing analysis (a second trait), without du
     expect_length(fake$state$analysis_values, 144)
     expect_true(all(startsWith(names(fake$state$analysis_values), "S1_AYT_2026_")))
     # The same values again: Breedbase reports them; nothing is replaced without overwrite.
-    expect_error(capture.output(add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
+    expect_error(capture_msgs(add_breedbase_analysis_values(dm1, con, analysis_name = "S1", level = "plot",
                                                               confirm = FALSE)), "already stored")
-    expect_error(capture.output(add_breedbase_analysis_values(dm1, con, analysis_name = "NOPE", confirm = FALSE)),
+    expect_error(capture_msgs(add_breedbase_analysis_values(dm1, con, analysis_name = "NOPE", confirm = FALSE)),
                  "was not found")
-    out <- capture.output(dr <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", overwrite = TRUE,
+    out <- capture_msgs(dr <- add_breedbase_analysis_values(dm1, con, analysis_name = "S1", overwrite = TRUE,
                                                               dry_run = TRUE))
     expect_true(any(grepl("Nothing was stored", out)))
   })
@@ -1491,15 +1491,15 @@ test_that("from Breedbase to analyses: read trials, outliers, first, second and 
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
     for (i in 1:2) {
-      capture.output(save_breedbase(designs[[i]], con, program = "IITA", trial_name = paste0("T_", sites[i]),
+      capture_msgs(save_breedbase(designs[[i]], con, program = "IITA", trial_name = paste0("T_", sites[i]),
                                     year = 2026, location = sites[i], confirm = FALSE, description = "x"))
       sheet <- phenotype_template(designs[[i]], paste0("T_", sites[i]), traits = "fresh root yield",
                                   location = sites[i])
       sheet$`fresh root yield` <- round(50 + g[sheet$accession] + 0.5 * sheet$row + rnorm(nrow(sheet)), 2)
       sheet$`fresh root yield`[5] <- 500                         # an outlier
-      capture.output(save_breedbase_phenotypes(sheet, con, confirm = FALSE))
+      capture_msgs(save_breedbase_phenotypes(sheet, con, confirm = FALSE))
     }
-    out <- capture.output(pheno <- breedbase_phenotypes(con, trials = paste0("T_", sites), traits = "fresh root yield"))
+    out <- capture_msgs(pheno <- breedbase_phenotypes(con, trials = paste0("T_", sites), traits = "fresh root yield"))
     expect_equal(nrow(pheno), 288)
     expect_equal(sum(!is.na(pheno$`fresh root yield`)), 288)
     expect_equal(attr(pheno, "trait_names")[["fresh root yield"]], "fresh root yield|CO_334:0000013")
@@ -1530,13 +1530,13 @@ test_that("from Breedbase to analyses: read trials, outliers, first, second and 
     s2 <- second_stage_values(two, trait = "fresh root yield")
     ss <- second_stage_values(one, trait = "fresh root yield")
 
-    capture.output(save_breedbase_analysis(s1, con, analysis_name = "MET_stage1", program = "IITA",
+    capture_msgs(save_breedbase_analysis(s1, con, analysis_name = "MET_stage1", program = "IITA",
                                            description = "first stage", level = "plot", estimate = "blue",
                                            confirm = FALSE))
-    capture.output(save_breedbase_analysis(s2, con, analysis_name = "MET_means", program = "IITA",
+    capture_msgs(save_breedbase_analysis(s2, con, analysis_name = "MET_means", program = "IITA",
                                            description = "two-stage means", confirm = FALSE))
     # A second analysis in the same project: single-stage means under "trait|statistic".
-    out <- capture.output(res <- add_breedbase_analysis_values(ss, con, analysis_name = "MET_means", level = "accession",
+    out <- capture_msgs(res <- add_breedbase_analysis_values(ss, con, analysis_name = "MET_means", level = "accession",
                                                                statistic = "Phenotypic BLUEs using LMER R",
                                                                confirm = FALSE))
     expect_equal(res$plots, n_geno)
@@ -1680,7 +1680,7 @@ test_that("plot coordinates are saved after the plots and read back", {
   httr2::with_mocked_responses(fake$mock, {
     con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
     out <- NULL
-    printed <- capture.output(out <- save_breedbase(g, con, program = "IITA", trial_name = "GPS_2026", year = 2026,
+    printed <- capture_msgs(out <- save_breedbase(g, con, program = "IITA", trial_name = "GPS_2026", year = 2026,
                                                     location = "Ibadan", description = "x", confirm = FALSE))
     expect_equal(out$plots_with_gps, 144)
     expect_equal(out$gps_found, 144)
@@ -1693,13 +1693,13 @@ test_that("plot coordinates are saved after the plots and read back", {
 
     # A trial saved without GPS gets it later; plots matched by number,
     # accessions checked.
-    capture.output(save_breedbase(rc, con, program = "IITA", trial_name = "LATER_2026", year = 2026,
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "LATER_2026", year = 2026,
                                   location = "Ibadan", description = "x", confirm = FALSE))
-    capture.output(res <- save_breedbase_coordinates(g, con, trial_name = "LATER_2026", confirm = FALSE))
+    capture_msgs(res <- save_breedbase_coordinates(g, con, trial_name = "LATER_2026", confirm = FALSE))
     expect_equal(res$gps_found, 144)
     other <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 2)
     other <- add_plot_coordinates(other, origin = c(7.5, 3.9), plot_width = 3, plot_length = 5)
-    expect_error(capture.output(save_breedbase_coordinates(other, con, trial_name = "LATER_2026", confirm = FALSE)),
+    expect_error(capture_msgs(save_breedbase_coordinates(other, con, trial_name = "LATER_2026", confirm = FALSE)),
                  "another accession")
     expect_error(save_breedbase_coordinates(rc, con, trial_name = "LATER_2026"), "no plot coordinates")
   })
