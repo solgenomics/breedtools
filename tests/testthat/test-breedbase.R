@@ -925,7 +925,7 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     expect_length(fake$state$observations, 2 * 144 - 4)
     expect_equal(res$values_found, res$values_sent)
     expect_equal(res$observation_variable_db_id, c("70001", "70002"))
-    expect_true(any(grepl("batch 3 of 3 saved", out)))
+    expect_true(any(grepl("saved 284/284 values", out)))
     one <- fake$state$observations[[1]]
     expect_true(all(c("observationUnitDbId", "observationVariableDbId", "value") %in% names(one)))
     expect_type(one$value, "character")
@@ -984,6 +984,55 @@ test_that("phenotypes: dry run, wide and long data, checks and upload", {
     expect_equal(res$values_found, 10)
     expect_equal(fake$state$observations[[length(fake$state$observations)]]$observationTimeStamp,
                  "2026-09-01 00:00:00")
+    # Running it again finds them at the same time and sends nothing.
+    n_before <- length(fake$state$observations)
+    out <- capture_msgs(save_breedbase_phenotypes(long, con, plot = "plot", trait = "trait",
+                                                  value = "value", timestamp = "when", confirm = FALSE))
+    expect_true(any(grepl("Nothing to write", out)))
+    expect_length(fake$state$observations, n_before)
+  })
+})
+
+test_that("phenotypes: a batch that times out is sent again in smaller batches", {
+  skip_if_not_installed("httr2")
+  old_options <- options(breedtools.write_wait = 0, breedtools.write_checks = 1,
+                         breedtools.observation_min_batch = 10)
+  on.exit(options(old_options), add = TRUE)
+  rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4), 12, 12, 4, 4, n_candidates = 5, seed = 1)
+  sheet <- phenotype_template(rc, "AYT_2026", location = "Ibadan", traits = "fresh root yield")
+  set.seed(2)
+  sheet$`fresh root yield` <- round(rnorm(144, 25, 4), 1)
+  fake <- fake_breedbase()
+  # The gateway gives up (504, nothing saved) on more than 40 values at a time.
+  big_fails <- function(req) {
+    if (grepl("/brapi/v2/observations$", req$url) && identical(req$method %||% "POST", "POST") &&
+        length(req$body$data) > 40) {
+      return(httr2::response(504))
+    }
+    fake$mock(req)
+  }
+  httr2::with_mocked_responses(fake$mock, {
+    con <- suppressMessages(breedbase_login("https://bb.example.org", "jdoe", password = "secret"))
+    capture_msgs(save_breedbase(rc, con, program = "IITA", trial_name = "AYT_2026", year = 2026,
+                                location = "Ibadan", confirm = FALSE, description = "x"))
+    httr2::with_mocked_responses(big_fails, {
+      out <- capture_msgs(res <- save_breedbase_phenotypes(sheet, con, confirm = FALSE, refresh = FALSE))
+    })
+    expect_length(fake$state$observations, 144)
+    expect_equal(res$values_found, 144)
+    expect_true(any(grepl("in batches of 72", out)))
+    expect_true(any(grepl("in batches of 36", out)))
+    expect_true(any(grepl("saved 144/144 values", out)))
+    # Even the smallest batch times out: stop with a clear message.
+    fake$state$observations <- list()
+    always <- function(req) {
+      if (grepl("/brapi/v2/observations$", req$url) && !is.null(req$body)) return(httr2::response(504))
+      fake$mock(req)
+    }
+    httr2::with_mocked_responses(always, {
+      expect_error(capture_msgs(save_breedbase_phenotypes(sheet, con, confirm = FALSE, refresh = FALSE)),
+                   "kept timing out, even with 10 values")
+    })
   })
 })
 

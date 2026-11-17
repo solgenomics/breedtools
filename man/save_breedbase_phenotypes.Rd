@@ -104,6 +104,15 @@ reported).}
 }
 }
 
+\section{Large uploads}{
+
+Values are sent 200 at a time (\code{options(breedtools.observation_batch = 100)} to change it). On a large trial Breedbase can take longer than its
+gateway allows (HTTP 504) and save nothing. Then the values missing are
+sent again in batches half the size, down to 25 values
+(\code{options(breedtools.observation_min_batch = 10)}), and the following
+batches keep the smaller size.
+}
+
 \section{Slow servers}{
 
 Accessions are searched 25 names at a time, because Breedbase looks up

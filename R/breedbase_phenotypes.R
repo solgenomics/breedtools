@@ -173,6 +173,14 @@ bb_no_location <- ".breedtools_no_location."
 #'
 #' @inheritSection breedbase_check Slow servers
 #'
+#' @section Large uploads:
+#' Values are sent 200 at a time (`options(breedtools.observation_batch =
+#' 100)` to change it). On a large trial Breedbase can take longer than its
+#' gateway allows (HTTP 504) and save nothing. Then the values missing are
+#' sent again in batches half the size, down to 25 values
+#' (`options(breedtools.observation_min_batch = 10)`), and the following
+#' batches keep the smaller size.
+#'
 #' @return Invisibly, a tibble with one row per trait: `trait`,
 #'   `observation_variable_db_id`, `values_sent`, `values_found` (read back
 #'   from Breedbase after saving), and how the values were handled:
@@ -289,13 +297,19 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
   # changed; and stored values whose cell is now empty.
   stored <- bb_stored_values(con, rbind(obs, empty))
   key_obs <- paste(obs$observation_unit_db_id, obs$observation_variable_db_id, sep = "\r")
-  hit <- match(key_obs, stored$key)
-  # Repeated measurements (with a timestamp) are always new values.
-  hit[!is.na(obs$timestamp)] <- NA
+  # Values without a timestamp match the latest stored value of the plot and
+  # trait; repeated measurements (with a timestamp) match the stored value at
+  # the same time, so a rerun does not send them again.
+  latest <- which(!duplicated(stored$key, fromLast = TRUE))
+  hit <- latest[match(key_obs, stored$key[latest])]
+  timed <- !is.na(obs$timestamp)
+  hit[timed] <- match(paste(key_obs[timed], bb_norm_time(obs$timestamp[timed]), sep = "\r"),
+                      paste(stored$key, stored$time, sep = "\r"))
   obs$observation_db_id <- stored$observation_db_id[hit]
   obs$stored_value <- stored$value[hit]
   obs$status <- ifelse(is.na(hit), "new", ifelse(bb_same_value(obs$value, obs$stored_value), "unchanged", "changed"))
-  empty_hit <- match(paste(empty$observation_unit_db_id, empty$observation_variable_db_id, sep = "\r"), stored$key)
+  empty_hit <- latest[match(paste(empty$observation_unit_db_id, empty$observation_variable_db_id, sep = "\r"),
+                            stored$key[latest])]
   to_remove <- empty[!is.na(empty_hit), , drop = FALSE]
   to_remove$stored_value <- stored$value[empty_hit[!is.na(empty_hit)]]
 
@@ -365,25 +379,8 @@ bb_save_phenotypes <- function(data, con, plot = "plot_name", traits = NULL, tra
     }
   }
 
-  batch <- getOption("breedtools.observation_batch", 500)
-  groups <- split(seq_along(records), ceiling(seq_along(records) / batch))
-  for (g in seq_along(groups)) {
-    idx <- groups[[g]]
-    bb_write_checked(
-      what = sprintf("save values %d-%d of %d", min(idx), max(idx), length(records)),
-      write = function() {
-        bb_post(con, "observations", records[idx], what = "save the phenotypes")
-        "done"
-      },
-      find = function() {
-        n <- bb_count_observations(con, send_new[idx, , drop = FALSE])
-        if (n >= length(idx)) "done" else NA_character_
-      }
-    )
-    if (length(groups) > 1) {
-      bt_say(sprintf("  ...    batch %d of %d saved: %d/%d values\n", g, length(groups), max(idx), length(records)))
-    }
-  }
+  batch <- getOption("breedtools.observation_batch", 200)
+  if (length(records)) bb_save_observations(con, records, send_new, batch)
   # Changed values: BrAPI PUT /observations, keyed by the stored observation.
   if (nrow(send_put)) {
     for (idx in split(seq_len(nrow(send_put)), ceiling(seq_len(nrow(send_put)) / batch))) {
@@ -564,6 +561,67 @@ bb_search_observations <- function(con, obs) {
   out
 }
 
+# POST new observations in batches. Breedbase checks each value against what
+# the trial already holds, so on a large trial a batch can outlast the
+# gateway (HTTP 504) and be rolled back. Then: wait and check what was
+# stored (the server may still finish), and send what is missing in batches
+# half the size, down to `breedtools.observation_min_batch` values; later
+# batches keep the smaller size.
+bb_save_observations <- function(con, records, send_new, batch) {
+  wait <- getOption("breedtools.write_wait", 20)
+  checks <- getOption("breedtools.write_checks", 9)
+  min_batch <- max(1L, as.integer(getOption("breedtools.observation_min_batch", 25)))
+  size <- max(1L, as.integer(batch))
+  total <- length(records)
+  todo <- seq_len(total)
+  failed_small <- 0L
+  n_post <- 0L
+  while (length(todo)) {
+    idx <- todo[seq_len(min(size, length(todo)))]
+    what <- sprintf("save %d values (%d of %d saved so far)", length(idx), total - length(todo), total)
+    res <- tryCatch(bb_post(con, "observations", records[idx], what = "save the phenotypes"),
+                    breedbase_error = function(e) e)
+    n_post <- n_post + 1L
+    if (!inherits(res, "breedbase_error")) {
+      todo <- setdiff(todo, idx)
+    } else {
+      if (!isTRUE(res$busy)) stop(res)
+      why <- if (is.na(res$code)) "no answer in time" else paste("HTTP", res$code)
+      bt_say("  ...    the server was slow to ", what, " (", why, "); checking whether it was done\n", sep = "")
+      found <- rep(FALSE, length(idx))
+      for (k in seq_len(checks)) {
+        Sys.sleep(wait)
+        f <- tryCatch(bb_observations_found(con, send_new[idx, , drop = FALSE]),
+                      breedbase_error = function(e) NULL)
+        if (!is.null(f)) found <- f
+        if (all(found)) break
+        bt_say(sprintf("  ...    %d of %d there so far (check %d of %d)\n", sum(found), length(idx), k, checks))
+      }
+      todo <- setdiff(todo, idx[found])
+      if (all(found)) {
+        bt_say("  ...    confirmed: done\n")
+      } else if (length(idx) <= min_batch) {
+        failed_small <- failed_small + 1L
+        if (failed_small >= 2L) {
+          stop("Could not save the phenotypes: the server kept timing out, even with ", length(idx),
+               " values at a time (", total - length(todo), " of ", total, " saved). Nothing is lost: run ",
+               "the save again later; what was already saved is found and the save continues. ",
+               "If it keeps failing, try options(breedtools.observation_min_batch = 5).", call. = FALSE)
+        }
+        bt_say("  ...    not done: trying again\n")
+      } else {
+        size <- max(min_batch, ceiling(length(idx[!found]) / 2))
+        bt_say(sprintf("  ...    not done: sending the %d missing values in batches of %d\n",
+                       sum(!found), size))
+      }
+    }
+    if (n_post > 1L || length(todo)) {
+      bt_say(sprintf("  ...    saved %d/%d values\n", total - length(todo), total))
+    }
+  }
+  invisible(total)
+}
+
 # How many of these values are stored (same plot, trait and value).
 bb_observations_found <- function(con, obs) {
   data <- bb_search_observations(con, obs)
@@ -574,18 +632,30 @@ bb_observations_found <- function(con, obs) {
 
 bb_count_observations <- function(con, obs) sum(bb_observations_found(con, obs))
 
-# Values stored for these plots and traits: key (unit, variable), value and
-# observationDbId (the latest one when a plot has several).
+# Values stored for these plots and traits: key (unit, variable), time
+# (normalized timestamp), value and observationDbId; one row per stored
+# observation, in Breedbase's order (the last one per key is the latest).
 bb_stored_values <- function(con, obs) {
-  empty <- tibble::tibble(key = character(), value = character(), observation_db_id = character())
+  empty <- tibble::tibble(key = character(), time = character(), value = character(),
+                          observation_db_id = character())
   if (!nrow(obs)) return(empty)
   data <- bb_search_observations(con, obs)
   if (!length(data)) return(empty)
   field <- function(f) vapply(data, function(x) as.character(x[[f]] %||% NA_character_), character(1))
   out <- tibble::tibble(key = paste(field("observationUnitDbId"), field("observationVariableDbId"), sep = "\r"),
+                        time = bb_norm_time(field("observationTimeStamp")),
                         value = field("value"), observation_db_id = field("observationDbId"))
-  out <- out[!is.na(out$value) & nzchar(out$value), , drop = FALSE]
-  out[!duplicated(out$key, fromLast = TRUE), , drop = FALSE]
+  out[!is.na(out$value) & nzchar(out$value), , drop = FALSE]
+}
+
+# Timestamps compared as "YYYY-MM-DD HH:MM:SS": Breedbase returns
+# "2026-07-13T09:00:00Z" for a value sent as "2026-07-13 09:00:00".
+bb_norm_time <- function(x) {
+  x <- sub("T", " ", trimws(as.character(x)), fixed = TRUE)
+  x <- sub("(\\.[0-9]+)?(Z|[+-][0-9]{2}:?[0-9]{2})?$", "", x)
+  x[!is.na(x) & grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)] <- paste(x[!is.na(x) & grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)], "00:00:00")
+  x[!is.na(x) & !nzchar(x)] <- NA_character_
+  x
 }
 
 # Same value: equal as numbers when both are numbers, else as text.
