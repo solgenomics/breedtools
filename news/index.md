@@ -1,5 +1,20 @@
 # Changelog
 
+## breedtools 0.1.1
+
+- [`save_breedbase_phenotypes()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.md)
+  and
+  [`save_breedbase_first_stage()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_first_stage.md)
+  save large uploads on slow servers: values are sent 200 at a time (was
+  500), and a batch that times out (HTTP 504) without being saved is
+  sent again in batches half the size, down to 25 values
+  (`options(breedtools.observation_min_batch = ...)`); later batches
+  keep the smaller size. Before, the same batch was sent again and the
+  save stopped with “the server kept timing out”.
+- Repeated measurements (values with a timestamp) already stored at the
+  same time are found when saving again and not sent twice; values
+  without a timestamp are compared with the latest stored value.
+
 ## breedtools 0.1.0
 
 - [`save_breedbase_analysis()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_analysis.md)

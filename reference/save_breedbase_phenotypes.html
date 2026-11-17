@@ -13,7 +13,7 @@ Breedbase first, and every problem is listed before anything is written."></head
 
     <a class="navbar-brand me-2" href="../index.html">breedtools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -169,6 +169,16 @@ reported).</p></dd>
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="large-uploads">Large uploads<a class="anchor" aria-label="anchor" href="#large-uploads"></a></h2>
+
+
+<p>Values are sent 200 at a time (<code>options(breedtools.observation_batch = 100)</code> to change it). On a large trial Breedbase can take longer than its
+gateway allows (HTTP 504) and save nothing. Then the values missing are
+sent again in batches half the size, down to 25 values
+(<code>options(breedtools.observation_min_batch = 10)</code>), and the following
+batches keep the smaller size.</p>
+    </div>
     <div class="section level2">
     <h2 id="slow-servers">Slow servers<a class="anchor" aria-label="anchor" href="#slow-servers"></a></h2>
 

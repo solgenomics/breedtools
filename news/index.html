@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">breedtools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,12 @@
       <small>Source: <a href="https://github.com/solgenomics/breedtools/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.1" id="breedtools-011">breedtools 0.1.1<a class="anchor" aria-label="anchor" href="#breedtools-011"></a></h2>
+<ul><li>
+<code><a href="../reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes()</a></code> and <code><a href="../reference/save_breedbase_first_stage.html">save_breedbase_first_stage()</a></code> save large uploads on slow servers: values are sent 200 at a time (was 500), and a batch that times out (HTTP 504) without being saved is sent again in batches half the size, down to 25 values (<code>options(breedtools.observation_min_batch = ...)</code>); later batches keep the smaller size. Before, the same batch was sent again and the save stopped with “the server kept timing out”.</li>
+<li>Repeated measurements (values with a timestamp) already stored at the same time are found when saving again and not sent twice; values without a timestamp are compared with the latest stored value.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="breedtools-010">breedtools 0.1.0<a class="anchor" aria-label="anchor" href="#breedtools-010"></a></h2>
 <ul><li><p><code><a href="../reference/save_breedbase_analysis.html">save_breedbase_analysis()</a></code> lists, before saving and in a dry run, the composed trait each trait will be stored under (“trait|statistic|COMP:id”) and whether it exists; the dry run returns them as <code>traits</code>. Choose another statistic from <code>breedbase_statistics(con)</code> with <code>statistic</code>.</p></li>
@@ -133,7 +139,8 @@
 <li><p>Both analyses now return adjusted entry means (BLUEs) with standard errors (<code>$adjusted_means</code>), and report the mean SED and the 5% LSD in <code>$diagnostics</code>.</p></li>
 <li><p>New tutorial, <code><a href="../articles/breedtools.html">vignette("breedtools")</a></code>, covering every design and analysis and the multi-environment tools, and an RStudio workflow script in <code>inst/examples</code>. The source package includes <code>scripts/validate_designs.R</code>, a step-by-step tour of every design and analysis with simple checks, and <code>scripts/run_all_checks.R</code>, the full automated validation against the published examples, <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>, ‘lme4’ and simulation.</p></li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
