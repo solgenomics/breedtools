@@ -4,6 +4,8 @@
 #' generations with a single plot per entry to fully replicated trials, and
 #' saves the designs into a 'Breedbase' database. The tutorial,
 #' `vignette("breedtools")`, walks through every design and analysis.
+#' For one complete workflow with offline Field Book collection, start with
+#' `vignette("getting-started", package = "breedtools")`.
 #'
 #' @section Which design?:
 #' Start with [design_options()] when the number of entries is known but
@@ -69,6 +71,8 @@
 #'   \item Save (with a dry run first): [save_breedbase()]
 #'   \item Phenotypes: [phenotype_template()] (sheet with the plot names),
 #'     [save_breedbase_phenotypes()] (values by plot and trait name)
+#'   \item Offline Field Book collection: [phenotype_template()] (field CSV
+#'     with no trait columns), [trait_template()] (trait definitions as `.trt`)
 #'   \item Analysis results: [first_stage_values()] and
 #'     [save_breedbase_first_stage()] (plot values as a trait of the field
 #'     plots, trait made by [breedbase_adjusted_trait()]);

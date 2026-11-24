@@ -45,6 +45,23 @@ Makes a table with one row per plot, the plot names that
 it in (in R or in a spreadsheet) and upload it with
 \code{\link[=save_breedbase_phenotypes]{save_breedbase_phenotypes()}}.
 }
+\section{Offline collection with Field Book}{
+
+Export a field file with \code{utils::write.csv(phenotype_template(design, trial_name, location = location), "field.csv", row.names = FALSE, na = "")}.
+Leave \code{traits} empty: the field file describes plots; use
+\code{\link[=trait_template]{trait_template()}} to make a separate \code{.trt} file defining measurements.
+In Field Book, import the field CSV with \code{plot_name} as the unique
+identifier and \code{row}/\code{col} as the primary/secondary identifiers (or
+\code{plot_number}/\code{accession} for a design without coordinates). Import the
+\code{.trt} in Traits, then collect offline. Export in Table format with all
+imported columns. Read the CSV with \code{check.names = FALSE} to preserve
+trait names and supply \code{traits} explicitly to \code{\link[=save_breedbase_phenotypes]{save_breedbase_phenotypes()}}.
+Use trait names recognized by Breedbase; keep \code{plot_name} unchanged.
+Table exports retain only the first repeated measurement; use Field
+Book's Database export and explicit \code{plot}, \code{trait}, \code{value}, and
+\code{timestamp} mappings when repeated measurements are needed.
+}
+
 \examples{
 rc <- augmented_row_column_design(paste0("G", 1:108), paste0("C", 1:4),
                                   12, 12, 4, 4, n_candidates = 5, seed = 1)

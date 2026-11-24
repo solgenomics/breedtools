@@ -1,0 +1,199 @@
+---
+title: "Getting started: one trial from planning to saved results"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started: one trial from planning to saved results}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 5)
+```
+
+This tutorial follows one augmented row-column trial from planning to
+Field Book collection, phenotypes, analysis and saved results. The executed
+examples use simulated observations and local files. Connection and upload
+chunks are shown but not executed: adapt them to your own database.
+
+**Connect → check names → design → export field and traits → collect →
+save phenotypes → analyse → save results**
+
+```{r setup}
+library(breedtools)
+trial_name <- "AYT_2026_Ibadan"
+location <- "Ibadan"
+trait <- "fresh root yield"
+entries <- sprintf("LINE_%03d", 1:108)
+checks <- c("CHECK_A", "CHECK_B", "CHECK_C", "CHECK_D")
+```
+
+## 1. Connect and check database names
+
+Skip this step to try the example offline. For a real trial, replace the
+example names with existing accessions, location, program, folder and
+trait names in your Breedbase site. Omit the password to enter it privately.
+
+```{r connect, eval=FALSE}
+con <- breedbase_login("https://your-breedbase.org", username = "your_username")
+breedbase_programs(con)
+breedbase_locations(con)
+breedbase_folders(con, program = "Your breeding program")
+breedbase_check(con, accessions = c(entries, checks), location = location,
+                program = "Your breeding program", folder = "AYT 2026",
+                trial_name = trial_name)
+```
+
+Resolve any missing names or existing trial-name conflicts before saving.
+
+## 2. Design and save the trial
+
+Our 12 × 12 field holds 108 test entries and 36 check plots. Each 4 × 4
+block contains the four checks. The seed makes the layout reproducible.
+
+```{r design}
+rc <- augmented_row_column_design(
+  treatments = entries, controls = checks,
+  rows_in_field = 12, cols_in_field = 12,
+  rows_per_block = 4, cols_per_block = 4, seed = 2026
+)
+check_design(rc)
+plot_augmented_row_column_design(rc)
+```
+
+Preview the trial locally. No database is changed by a dry run.
+
+```{r preview-design}
+payload <- save_breedbase(
+  rc, trial_name = trial_name, year = 2026, location = location,
+  program = "Your breeding program", folder = "AYT 2026",
+  description = "Advanced yield trial", dry_run = TRUE
+)
+```
+
+For a real trial, validate against the database and then save:
+
+```{r save-design, eval=FALSE}
+save_breedbase(rc, con, trial_name = trial_name, year = 2026,
+  location = location, program = "Your breeding program", folder = "AYT 2026",
+  description = "Advanced yield trial", dry_run = TRUE)
+save_breedbase(rc, con, trial_name = trial_name, year = 2026,
+  location = location, program = "Your breeding program", folder = "AYT 2026",
+  description = "Advanced yield trial")
+```
+
+## 3. Export field and trait files for offline collection
+
+`phenotype_template()` gives the plots the same names as the database
+upload. Leave its `traits` argument empty for a Field Book field file;
+measurements are defined separately by `trait_template()`.
+
+```{r field-book-files}
+output_dir <- tempdir()  # use a persistent folder for your real trial
+field <- phenotype_template(rc, trial_name, location = location)
+field_file <- file.path(output_dir, "AYT_2026_Ibadan.csv")
+write.csv(field, field_file, row.names = FALSE, na = "")
+traits <- trait_template(
+  trait, minimum = 0, details = "Fresh root yield in t/ha",
+  output_file = file.path(output_dir, "AYT_traits.trt")
+)
+head(field)
+traits
+```
+
+Transfer these files to the Android device by USB or your preferred file
+transfer method. No mobile BrAPI connection is required.
+
+1. In Field Book's **Fields**, import the CSV. Select `plot_name` as the
+   unique identifier, `row` as primary and `col` as secondary identifier.
+   For designs without coordinates, use `plot_number` and `accession` for
+   navigation instead. Plot names must be unique across your fields.
+2. In **Traits > Import/Export**, import `AYT_traits.trt`. These definitions
+   configure the app; they do not create ontology terms in Breedbase.
+3. Collect the measurements offline.
+4. Export in **Table** format with **all imported columns**, including
+   `plot_name`, and transfer the resulting CSV back to your computer.
+
+The app's [field](https://field-book.readthedocs.io/en/latest/fields.html),
+[trait](https://field-book.readthedocs.io/en/latest/traits.html) and
+[export](https://field-book.readthedocs.io/en/latest/export.html) documentation
+explains these options. Table format retains only the first repeated
+measurement. For repeated observations, use Database format and map its
+plot, trait, value and timestamp columns explicitly in
+`save_breedbase_phenotypes()`.
+
+## 4. Read and save the phenotypes
+
+For this walkthrough, simulate a completed field sheet and write it to CSV.
+In practice, use the file exported by Field Book instead.
+
+```{r simulate-observations}
+set.seed(2026)
+observed <- field
+observed[[trait]] <- round(rnorm(nrow(field), mean = 25, sd = 3), 2)
+observations_file <- file.path(output_dir, "AYT_2026_Ibadan_observed.csv")
+write.csv(observed, observations_file, row.names = FALSE, na = "")
+```
+
+Preserve trait names, including spaces, when reading. Read identifiers as
+text so they are not reformatted. Select measurement columns explicitly
+so metadata added by the app is not treated as a trait.
+
+```{r read-phenotypes}
+observed <- read.csv(observations_file, check.names = FALSE,
+                     colClasses = "character", na.strings = c("", "NA"))
+observations <- save_breedbase_phenotypes(observed, traits = trait, dry_run = TRUE)
+```
+
+The trial's plots and the trait must already exist before uploading:
+
+```{r save-phenotypes, eval=FALSE}
+save_breedbase_phenotypes(observed, con, traits = trait, dry_run = TRUE)
+save_breedbase_phenotypes(observed, con, traits = trait)
+```
+
+## 5. Analyse the collected observations
+
+Match on `plot_name` rather than relying on the CSV row order. This also
+keeps design columns in their original types for analysis.
+
+```{r analyse}
+stopifnot(!anyDuplicated(observed$plot_name),
+          setequal(observed$plot_name, field$plot_name))
+values <- as.numeric(observed[[trait]][match(field$plot_name, observed$plot_name)])
+design_rows <- match(rc$design$plots, field$plot_number)
+analysis_data <- rc$design
+analysis_data$yield <- values[design_rows]
+fit <- analyze_augmented_row_column_design(analysis_data, response = "yield")
+head(fit$adjusted_means)
+```
+
+For real observations, investigate unexpected values and missing plots
+before fitting. `plot_trait()` and `find_outliers()` can help.
+
+## 6. Save the analysis results
+
+Convert the adjusted means into the standard format and preview them
+locally. This stores genotype means as a Breedbase analysis.
+
+```{r preview-analysis}
+means <- second_stage_values(fit, trait = trait)
+analysis_payload <- save_breedbase_analysis(
+  means, analysis_name = paste0(trial_name, "_means"),
+  program = "Your breeding program",
+  description = "Adjusted means from the row-column model", dry_run = TRUE
+)
+```
+
+```{r save-analysis, eval=FALSE}
+save_breedbase_analysis(means, con, analysis_name = paste0(trial_name, "_means"),
+  program = "Your breeding program",
+  description = "Adjusted means from the row-column model", dry_run = TRUE)
+save_breedbase_analysis(means, con, analysis_name = paste0(trial_name, "_means"),
+  program = "Your breeding program",
+  description = "Adjusted means from the row-column model")
+```
+
+For adjusted plot-level values, see `first_stage_values()` and
+`save_breedbase_first_stage()`. The full `vignette("breedtools")` covers
+other designs, spatial models and analyses across locations.

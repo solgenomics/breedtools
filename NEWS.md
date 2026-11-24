@@ -1,3 +1,15 @@
+# breedtools 0.1.2
+
+* `trait_template()` creates offline Field Book `.trt` files with trait
+  formats, bounds, categories, descriptions and display order. The README
+  and `phenotype_template()` help now explain field/trait import and CSV
+  export back to Breedbase without a mobile BrAPI connection.
+* A getting-started vignette follows one complete trial workflow. The
+  README adds a workflow diagram and installation instructions that build
+  vignettes for discovery with `vignette()`.
+* Continuous integration now builds and checks the package and verifies
+  discovery of both installed vignettes.
+
 # breedtools 0.1.1
 
 * `save_breedbase_phenotypes()` and `save_breedbase_first_stage()` save

@@ -13,6 +13,22 @@
 #' it in (in R or in a spreadsheet) and upload it with
 #' [save_breedbase_phenotypes()].
 #'
+#' @section Offline collection with Field Book:
+#' Export a field file with `utils::write.csv(phenotype_template(design,
+#' trial_name, location = location), "field.csv", row.names = FALSE, na = "")`.
+#' Leave `traits` empty: the field file describes plots; use
+#' [trait_template()] to make a separate `.trt` file defining measurements.
+#' In Field Book, import the field CSV with `plot_name` as the unique
+#' identifier and `row`/`col` as the primary/secondary identifiers (or
+#' `plot_number`/`accession` for a design without coordinates). Import the
+#' `.trt` in Traits, then collect offline. Export in Table format with all
+#' imported columns. Read the CSV with `check.names = FALSE` to preserve
+#' trait names and supply `traits` explicitly to [save_breedbase_phenotypes()].
+#' Use trait names recognized by Breedbase; keep `plot_name` unchanged.
+#' Table exports retain only the first repeated measurement; use Field
+#' Book's Database export and explicit `plot`, `trait`, `value`, and
+#' `timestamp` mappings when repeated measurements are needed.
+#'
 #' @param design A design from [augmented_row_column_design()],
 #'   [augmented_prep_design()], [resolvable_row_column_design()],
 #'   [as_breedbase_design()] or [prepare_breedbase_trial()].

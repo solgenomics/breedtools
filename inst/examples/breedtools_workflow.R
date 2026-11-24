@@ -24,7 +24,7 @@
 # Install once (pick the option that applies to you):
 # install.packages("remotes")
 # install.packages("breedtools")                    # from CRAN (once released)
-# remotes::install_github("solgenomics/breedtools")    # development version
+# remotes::install_github("solgenomics/breedtools", build_vignettes = TRUE)
 # devtools::install("path/to/breedtools")           # from a local copy
 # install.packages(c("lme4", "SpATS", "httr2"))     # optional: mixed and spatial
 #                                                   # models, saving to Breedbase
@@ -548,6 +548,18 @@ if (save_to_breedbase) {
 
 # After harvest, the values go to the plots saved above, matched by plot name
 # and trait name (the trait name as in Breedbase, e.g. "fresh root yield").
+
+# For offline collection with the Field Book Android app, export two files.
+# In Fields, import the CSV with plot_name as the unique identifier and
+# row/col as the primary/secondary identifiers. Import the .trt in Traits.
+fb_field <- phenotype_template(rc, trial_name = my_trial_name, location = my_location)
+write.csv(fb_field, file.path(out_dir, "field_book_field.csv"), row.names = FALSE, na = "")
+trait_template(c("fresh root yield", "dry matter content percentage"),
+  minimum = 0, maximum = c(NA, 100), details = c("Yield in t/ha", "Dry matter (%)"),
+  output_file = file.path(out_dir, "field_book_traits.trt"))
+# After collection, export Table format with all imported columns. Read with
+# check.names = FALSE and pass traits explicitly to save_breedbase_phenotypes().
+# See vignette("getting-started") for the full round trip.
 
 # Step 1. A sheet with the plot names of the trial and one empty column per trait.
 pheno_sheet <- phenotype_template(rc, trial_name = my_trial_name, location = my_location,

@@ -10,6 +10,8 @@ breedtools designs and analyses plant breeding field trials, from early
 generations with a single plot per entry to fully replicated trials, and
 saves the designs into a 'Breedbase' database. The tutorial,
 \code{vignette("breedtools")}, walks through every design and analysis.
+For one complete workflow with offline Field Book collection, start with
+\code{vignette("getting-started", package = "breedtools")}.
 }
 \section{Which design?}{
 
@@ -84,6 +86,8 @@ phenotypic data are saved to the same plots.
 \item Save (with a dry run first): \code{\link[=save_breedbase]{save_breedbase()}}
 \item Phenotypes: \code{\link[=phenotype_template]{phenotype_template()}} (sheet with the plot names),
 \code{\link[=save_breedbase_phenotypes]{save_breedbase_phenotypes()}} (values by plot and trait name)
+\item Offline Field Book collection: \code{\link[=phenotype_template]{phenotype_template()}} (field CSV
+with no trait columns), \code{\link[=trait_template]{trait_template()}} (trait definitions as \code{.trt})
 \item Analysis results: \code{\link[=first_stage_values]{first_stage_values()}} and
 \code{\link[=save_breedbase_first_stage]{save_breedbase_first_stage()}} (plot values as a trait of the field
 plots, trait made by \code{\link[=breedbase_adjusted_trait]{breedbase_adjusted_trait()}});

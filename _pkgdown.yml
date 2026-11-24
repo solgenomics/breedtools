@@ -12,6 +12,7 @@ articles:
   - title: Tutorial
     navbar: ~
     contents:
+      - getting-started
       - breedtools
 
 reference:
@@ -111,6 +112,7 @@ reference:
       - save_breedbase_coordinates
       - breedbase_trial_plots
       - phenotype_template
+      - trait_template
 
   - title: Phenotypes and analysis results in Breedbase
     desc: >

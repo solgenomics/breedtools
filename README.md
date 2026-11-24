@@ -1,7 +1,15 @@
 # breedtools
 
-Design and analysis of plant breeding trials, from single trials to groups
-of environments, with storage in 'Breedbase'.
+Take a breeding trial from planning to field collection, analysis and
+storage in Breedbase, in one reproducible R workflow. Reuse the same
+design, plot identifiers and trait names at each step, so there is less
+manual reformatting between your database, field sheets and analysis.
+
+![Workflow: connect to Breedbase, check database names, design a trial, export field and trait files, collect offline with Field Book, save phenotypes, analyse and save results.](man/figures/README-workflow.svg)
+
+New to the package? The [getting-started tutorial](https://solgenomics.github.io/breedtools/articles/getting-started.html)
+follows one trial through this complete workflow, with an example you can
+run offline and optional steps for saving to your database.
 
 - **Design** augmented row-column, augmented p-rep and resolvable
   row-column trials, or bring designs made with 'agricolae'.
@@ -16,9 +24,17 @@ of environments, with storage in 'Breedbase'.
 
 ```r
 # install.packages("remotes")
-remotes::install_github("solgenomics/breedtools")
+# install.packages(c("knitr", "rmarkdown"))  # needed to build the tutorials
+remotes::install_github("solgenomics/breedtools", build_vignettes = TRUE)
 library(breedtools)
+vignette("getting-started", package = "breedtools")
 ```
+
+Building the vignettes requires `knitr`, `rmarkdown` and Pandoc (included
+with RStudio). GitHub installations omit built vignettes by default. If
+`vignette("breedtools")` reports that it cannot find the vignette, reinstall
+with `build_vignettes = TRUE` as above and restart R. Alternatively, read
+the [full tutorial online](https://solgenomics.github.io/breedtools/articles/breedtools.html).
 
 ## Connect to Breedbase (optional)
 
@@ -120,6 +136,50 @@ For a field book alone, including `agricolae::zigzag()` output, supply
 e.g. `accession = "genotype"`; the other factors stay in `trial$book`. See
 `?as_breedbase_design` for the column mapping.
 
+## Collect offline with the Field Book app
+
+The [Field Book Android app](https://field-book.readthedocs.io/en/latest/field-book.html)
+can collect data without a BrAPI connection. Create two local files:
+
+```r
+# Plot metadata only; measurements are defined in the separate trait file
+field <- phenotype_template(rc, "AYT_2026_Ibadan", location = "Ibadan")
+write.csv(field, "AYT_2026_Ibadan.csv", row.names = FALSE, na = "")
+trait_template(
+  c("fresh root yield", "dry matter content percentage"),
+  minimum = 0, maximum = c(NA, 100),
+  details = c("Yield in t/ha", "Dry matter as a percentage"),
+  output_file = "AYT_traits.trt"
+)
+```
+
+Transfer the CSV and `.trt` files to your device. In **Fields**, import
+the CSV using `plot_name` as the unique identifier, `row` as the primary
+identifier and `col` as the secondary identifier. For designs without
+coordinates, use `plot_number` and `accession` for navigation. In
+**Traits > Import/Export**, import the `.trt` file, then collect your data.
+See Field Book's [field import](https://field-book.readthedocs.io/en/latest/fields.html)
+and [trait import](https://field-book.readthedocs.io/en/latest/traits.html) instructions.
+
+Export the observations in **Table** format with **all imported columns**
+and transfer the CSV back to your computer:
+
+```r
+observed <- read.csv("AYT_2026_Ibadan_observed.csv", check.names = FALSE,
+                     colClasses = "character", na.strings = c("", "NA"))
+save_breedbase_phenotypes(observed, con, traits = "fresh root yield", dry_run = TRUE)
+save_breedbase_phenotypes(observed, con, traits = "fresh root yield")
+```
+
+Keep plot names unchanged, save the trial before uploading observations,
+and use trait names that already exist in Breedbase. `trait_template()`
+defines local app traits; it does not create database ontology terms.
+Always supply the measurement columns through `traits` so extra app
+metadata is not interpreted as a trait. Field Book's
+[Table export](https://field-book.readthedocs.io/en/latest/export.html)
+retains only the first repeated measurement; use Database format with
+explicit plot/trait/value/timestamp mappings for repeated observations.
+
 ## Analysis
 
 Each design has its own analysis: ANOVA with estimable degrees of freedom,
@@ -200,7 +260,10 @@ also saves the results as JSON.
   [function reference](https://solgenomics.github.io/breedtools/reference/)
   groups every function by task and shows its arguments with examples you
   can run.
-- **Tutorial**: `vignette("breedtools")` walks through every design and
+- **Getting started**: `vignette("getting-started", package = "breedtools")`
+  follows one trial from connection and checks to Field Book files,
+  phenotypes, analysis and saving results.
+- **Full tutorial**: `vignette("breedtools", package = "breedtools")` walks through every design and
   analysis with simulated data, and connecting to Breedbase.
 - **RStudio script**: the whole workflow in one file,
   `file.edit(system.file("examples", "breedtools_workflow.R", package = "breedtools"))`.
@@ -334,6 +397,7 @@ check_reset(); check_design(rc); check_summary()
 | `save_breedbase()` | Saves a design as a new trial with its plots and their GPS coordinates (`dry_run = TRUE` previews it) |
 | `breedbase_trial_plots()` | Reads the plots of a saved trial |
 | `phenotype_template()` | Makes a phenotyping sheet with the Breedbase plot names |
+| `trait_template()` | Creates a Field Book trait table and optional `.trt` file for offline collection |
 
 ```r
 con <- breedbase_login("https://your-breedbase.org", "your_username")

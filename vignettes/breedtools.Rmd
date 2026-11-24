@@ -23,6 +23,13 @@ design and analysis in the package, using simulated phenotypes.
 library(breedtools)
 ```
 
+For one complete trial, including offline Field Book field/trait files and
+the return of observations to Breedbase, start with
+`vignette("getting-started", package = "breedtools")`. If installed
+vignettes are missing after a GitHub installation, reinstall with
+`remotes::install_github("solgenomics/breedtools", build_vignettes = TRUE)`;
+building requires knitr, rmarkdown and Pandoc.
+
 ## Which design?
 
 | Situation | Design | Generate | Analyse |
