@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="350" viewBox="0 0 960 350" role="img" aria-labelledby="title desc">
+  <title id="title">One connected breeding trial workflow</title>
+  <desc id="desc">Connect to Breedbase, check database names, design the trial, export field and trait files, collect offline with Field Book, save phenotypes, analyse the trial and save analysis results. Plot identifiers connect every step.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#486176" stroke-width="1.5"/></marker>
+    <style>text{font-family:Arial,sans-serif;fill:#16324a} .step{font-size:17px;font-weight:bold} .detail{font-size:13px;fill:#425b70} .box{fill:#edf5fa;stroke:#b8cfdf;stroke-width:1.5} .link{fill:none;stroke:#486176;stroke-width:2;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect width="960" height="350" rx="16" fill="#ffffff"/>
+  <text x="30" y="35" font-size="23" font-weight="bold">From trial planning to saved results</text>
+  <text x="30" y="59" class="detail">Reuse the same design, plot identifiers and trait names at every step.</text>
+  <g text-anchor="middle">
+    <rect class="box" x="30" y="85" width="200" height="80" rx="10"/>
+    <text class="step" x="130" y="117">1. Connect</text><text class="detail" x="130" y="143">Your Breedbase site</text>
+    <rect class="box" x="265" y="85" width="200" height="80" rx="10"/>
+    <text class="step" x="365" y="117">2. Check names</text><text class="detail" x="365" y="143">Accessions, location, program</text>
+    <rect class="box" x="500" y="85" width="200" height="80" rx="10"/>
+    <text class="step" x="600" y="117">3. Design trial</text><text class="detail" x="600" y="143">Check layout and save plots</text>
+    <rect class="box" x="735" y="85" width="200" height="80" rx="10"/>
+    <text class="step" x="835" y="117">4. Export files</text><text class="detail" x="835" y="143">Field CSV + trait .trt</text>
+    <rect x="735" y="210" width="200" height="80" rx="10" fill="#e7f5ec" stroke="#8bbf9c" stroke-width="1.5"/>
+    <text class="step" x="835" y="242">5. Collect offline</text><text class="detail" x="835" y="268">Field Book app → CSV</text>
+    <rect class="box" x="500" y="210" width="200" height="80" rx="10"/>
+    <text class="step" x="600" y="242">6. Save phenotypes</text><text class="detail" x="600" y="268">Match plots and traits</text>
+    <rect class="box" x="265" y="210" width="200" height="80" rx="10"/>
+    <text class="step" x="365" y="242">7. Analyse</text><text class="detail" x="365" y="268">Adjusted means and models</text>
+    <rect class="box" x="30" y="210" width="200" height="80" rx="10"/>
+    <text class="step" x="130" y="242">8. Save results</text><text class="detail" x="130" y="268">Breedbase analysis</text>
+  </g>
+  <path class="link" d="M230 125 H258"/><path class="link" d="M465 125 H493"/><path class="link" d="M700 125 H728"/>
+  <path class="link" d="M835 165 V203"/>
+  <path class="link" d="M735 250 H707"/><path class="link" d="M500 250 H472"/><path class="link" d="M265 250 H237"/>
+  <text x="480" y="326" text-anchor="middle" class="detail">Design, file export and analysis work offline. Connect when checking names or saving to Breedbase.</text>
+</svg>

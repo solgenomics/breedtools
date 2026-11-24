@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">breedtools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,12 @@
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="../articles/breedtools.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/getting-started.html">Getting started: one trial from planning to saved results</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -54,7 +60,7 @@
                         <h4 data-toc-skip class="author">Christiano
 Costa Simoes (<a href="mailto:ccs263@cornell.edu" class="email">ccs263@cornell.edu</a>)</h4>
             
-            <h4 data-toc-skip class="date">2026-11-17</h4>
+            <h4 data-toc-skip class="date">2026-11-24</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/solgenomics/breedtools/blob/main/vignettes/breedtools.Rmd" class="external-link"><code>vignettes/breedtools.Rmd</code></a></small>
       <div class="d-none name"><code>breedtools.Rmd</code></div>
@@ -70,6 +76,13 @@ goes through every design and analysis in the package, using simulated
 phenotypes.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/solgenomics/breedtools" class="external-link">breedtools</a></span><span class="op">)</span></span></code></pre></div>
+<p>For one complete trial, including offline Field Book field/trait
+files and the return of observations to Breedbase, start with
+<code><a href="../articles/getting-started.html">vignette("getting-started", package = "breedtools")</a></code>. If
+installed vignettes are missing after a GitHub installation, reinstall
+with
+<code>remotes::install_github("solgenomics/breedtools", build_vignettes = TRUE)</code>;
+building requires knitr, rmarkdown and Pandoc.</p>
 <div class="section level3">
 <h3 id="which-design">Which design?<a class="anchor" aria-label="anchor" href="#which-design"></a>
 </h3>

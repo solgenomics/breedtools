@@ -45,9 +45,9 @@ Invisibly, `TRUE` if everything needed is in place.
 check_setup(out_dir = file.path(tempdir(), "my_trials"))
 #> 
 #> == 0. Setup ==
-#>   [OK]   breedtools 0.1.1 is loaded
+#>   [OK]   breedtools 0.1.2 is loaded
 #>   [OK]   lme4 is installed (needed for mixed models: random blocks, random entries, random genotype x location)
 #>   [OK]   SpATS is installed (needed for spatial models)
-#>   [OK]   files can be saved in /tmp/RtmpfnruZ9/my_trials
+#>   [OK]   files can be saved in /tmp/RtmpF4v14r/my_trials
 #> Everything is ready to start a new design.
 ```

@@ -152,6 +152,8 @@ the payload, and save trials with their plots.
   : Read the plots of a trial saved in Breedbase
 - [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md)
   : Phenotyping template with the Breedbase plot names of a design
+- [`trait_template()`](https://solgenomics.github.io/breedtools/reference/trait_template.md)
+  : Create a Field Book trait file
 
 ## Phenotypes and analysis results in Breedbase
 

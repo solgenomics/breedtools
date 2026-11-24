@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://solgenomics.github.io/breedtools/404.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/articles/breedtools.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/articles/getting-started.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/articles/index.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/authors.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/index.html</loc></url>
@@ -102,5 +103,6 @@
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_first_stage.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.html</loc></url>
 <url><loc>https://solgenomics.github.io/breedtools/reference/second_stage_values.html</loc></url>
+<url><loc>https://solgenomics.github.io/breedtools/reference/trait_template.html</loc></url>
 </urlset>
 

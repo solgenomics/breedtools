@@ -4,7 +4,9 @@ breedtools designs and analyses plant breeding field trials, from early
 generations with a single plot per entry to fully replicated trials, and
 saves the designs into a 'Breedbase' database. The tutorial,
 [`vignette("breedtools")`](https://solgenomics.github.io/breedtools/articles/breedtools.md),
-walks through every design and analysis.
+walks through every design and analysis. For one complete workflow with
+offline Field Book collection, start with
+[`vignette("getting-started", package = "breedtools")`](https://solgenomics.github.io/breedtools/articles/getting-started.md).
 
 ## Which design?
 
@@ -113,6 +115,12 @@ phenotypic data are saved to the same plots.
   (sheet with the plot names),
   [`save_breedbase_phenotypes()`](https://solgenomics.github.io/breedtools/reference/save_breedbase_phenotypes.md)
   (values by plot and trait name)
+
+- Offline Field Book collection:
+  [`phenotype_template()`](https://solgenomics.github.io/breedtools/reference/phenotype_template.md)
+  (field CSV with no trait columns),
+  [`trait_template()`](https://solgenomics.github.io/breedtools/reference/trait_template.md)
+  (trait definitions as `.trt`)
 
 - Analysis results:
   [`first_stage_values()`](https://solgenomics.github.io/breedtools/reference/first_stage_values.md)

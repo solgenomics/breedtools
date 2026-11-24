@@ -15,7 +15,7 @@ save_breedbase_phenotypes()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">breedtools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,10 @@ save_breedbase_phenotypes()."></head><body>
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/breedtools.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/getting-started.html">Getting started: one trial from planning to saved results</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -100,6 +104,24 @@ pattern) and the design has no stored plot names.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble: <code>plot_name</code>, <code>trial_name</code>, <code>accession</code>, <code>plot_number</code>,
 <code>block</code>, <code>rep</code>, <code>row</code>, <code>col</code>, <code>is_check</code> and one column per trait.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="offline-collection-with-field-book">Offline collection with Field Book<a class="anchor" aria-label="anchor" href="#offline-collection-with-field-book"></a></h2>
+
+
+<p>Export a field file with <code>utils::write.csv(phenotype_template(design, trial_name, location = location), "field.csv", row.names = FALSE, na = "")</code>.
+Leave <code>traits</code> empty: the field file describes plots; use
+<code><a href="trait_template.html">trait_template()</a></code> to make a separate <code>.trt</code> file defining measurements.
+In Field Book, import the field CSV with <code>plot_name</code> as the unique
+identifier and <code>row</code>/<code>col</code> as the primary/secondary identifiers (or
+<code>plot_number</code>/<code>accession</code> for a design without coordinates). Import the
+<code>.trt</code> in Traits, then collect offline. Export in Table format with all
+imported columns. Read the CSV with <code>check.names = FALSE</code> to preserve
+trait names and supply <code>traits</code> explicitly to <code><a href="save_breedbase_phenotypes.html">save_breedbase_phenotypes()</a></code>.
+Use trait names recognized by Breedbase; keep <code>plot_name</code> unchanged.
+Table exports retain only the first repeated measurement; use Field
+Book's Database export and explicit <code>plot</code>, <code>trait</code>, <code>value</code>, and
+<code>timestamp</code> mappings when repeated measurements are needed.</p>
     </div>
 
     <div class="section level2">

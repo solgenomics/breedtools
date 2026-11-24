@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="index.html">breedtools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,12 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="articles/breedtools.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/getting-started.html">Getting started: one trial from planning to saved results</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -49,7 +55,11 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="breedtools">breedtools<a class="anchor" aria-label="anchor" href="#breedtools"></a>
 </h1></div>
-<p>Design and analysis of plant breeding trials, from single trials to groups of environments, with storage in ‘Breedbase’.</p>
+<p>Take a breeding trial from planning to field collection, analysis and storage in Breedbase, in one reproducible R workflow. Reuse the same design, plot identifiers and trait names at each step, so there is less manual reformatting between your database, field sheets and analysis.</p>
+<div class="float">
+<img src="reference/figures/README-workflow.svg" alt="Workflow: connect to Breedbase, check database names, design a trial, export field and trait files, collect offline with Field Book, save phenotypes, analyse and save results."><div class="figcaption">Workflow: connect to Breedbase, check database names, design a trial, export field and trait files, collect offline with Field Book, save phenotypes, analyse and save results.</div>
+</div>
+<p>New to the package? The <a href="https://solgenomics.github.io/breedtools/articles/getting-started.html">getting-started tutorial</a> follows one trial through this complete workflow, with an example you can run offline and optional steps for saving to your database.</p>
 <ul>
 <li>
 <strong>Design</strong> augmented row-column, augmented p-rep and resolvable row-column trials, or bring designs made with ‘agricolae’.</li>
@@ -65,8 +75,11 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"solgenomics/breedtools"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/solgenomics/breedtools" class="external-link">breedtools</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># install.packages(c("knitr", "rmarkdown"))  # needed to build the tutorials</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"solgenomics/breedtools"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/solgenomics/breedtools" class="external-link">breedtools</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span></span></code></pre></div>
+<p>Building the vignettes requires <code>knitr</code>, <code>rmarkdown</code> and Pandoc (included with RStudio). GitHub installations omit built vignettes by default. If <code><a href="articles/breedtools.html">vignette("breedtools")</a></code> reports that it cannot find the vignette, reinstall with <code>build_vignettes = TRUE</code> as above and restart R. Alternatively, read the <a href="https://solgenomics.github.io/breedtools/articles/breedtools.html">full tutorial online</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="connect-to-breedbase-optional">Connect to Breedbase (optional)<a class="anchor" aria-label="anchor" href="#connect-to-breedbase-optional"></a>
@@ -161,10 +174,33 @@
 <p><code><a href="reference/prepare_breedbase_trial.html">prepare_breedbase_trial()</a></code> records the trial information once and converts the field book. In an interactive RStudio session it can ask for the missing name, year, location, program and description. It recognizes CRD, RCBD, alpha, lattice, augmented block, split-plot and strip-plot designs. For a field book alone, including <code><a href="https://rdrr.io/pkg/agricolae/man/zigzag.html" class="external-link">agricolae::zigzag()</a></code> output, supply <code>design_type</code>. For several treatment factors, name the accession column, e.g. <code>accession = "genotype"</code>; the other factors stay in <code>trial$book</code>. See <code><a href="reference/as_breedbase_design.html">?as_breedbase_design</a></code> for the column mapping.</p>
 </div>
 <div class="section level2">
+<h2 id="collect-offline-with-the-field-book-app">Collect offline with the Field Book app<a class="anchor" aria-label="anchor" href="#collect-offline-with-the-field-book-app"></a>
+</h2>
+<p>The <a href="https://field-book.readthedocs.io/en/latest/field-book.html" class="external-link">Field Book Android app</a> can collect data without a BrAPI connection. Create two local files:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Plot metadata only; measurements are defined in the separate trait file</span></span>
+<span><span class="va">field</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/phenotype_template.html">phenotype_template</a></span><span class="op">(</span><span class="va">rc</span>, <span class="st">"AYT_2026_Ibadan"</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">field</span>, <span class="st">"AYT_2026_Ibadan.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/trait_template.html">trait_template</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fresh root yield"</span>, <span class="st">"dry matter content percentage"</span><span class="op">)</span>,</span>
+<span>  minimum <span class="op">=</span> <span class="fl">0</span>, maximum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">100</span><span class="op">)</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Yield in t/ha"</span>, <span class="st">"Dry matter as a percentage"</span><span class="op">)</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="st">"AYT_traits.trt"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Transfer the CSV and <code>.trt</code> files to your device. In <strong>Fields</strong>, import the CSV using <code>plot_name</code> as the unique identifier, <code>row</code> as the primary identifier and <code>col</code> as the secondary identifier. For designs without coordinates, use <code>plot_number</code> and <code>accession</code> for navigation. In <strong>Traits &gt; Import/Export</strong>, import the <code>.trt</code> file, then collect your data. See Field Book’s <a href="https://field-book.readthedocs.io/en/latest/fields.html" class="external-link">field import</a> and <a href="https://field-book.readthedocs.io/en/latest/traits.html" class="external-link">trait import</a> instructions.</p>
+<p>Export the observations in <strong>Table</strong> format with <strong>all imported columns</strong> and transfer the CSV back to your computer:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">observed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"AYT_2026_Ibadan_observed.csv"</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>                     colClasses <span class="op">=</span> <span class="st">"character"</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">con</span>, traits <span class="op">=</span> <span class="st">"fresh root yield"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">con</span>, traits <span class="op">=</span> <span class="st">"fresh root yield"</span><span class="op">)</span></span></code></pre></div>
+<p>Keep plot names unchanged, save the trial before uploading observations, and use trait names that already exist in Breedbase. <code><a href="reference/trait_template.html">trait_template()</a></code> defines local app traits; it does not create database ontology terms. Always supply the measurement columns through <code>traits</code> so extra app metadata is not interpreted as a trait. Field Book’s <a href="https://field-book.readthedocs.io/en/latest/export.html" class="external-link">Table export</a> retains only the first repeated measurement; use Database format with explicit plot/trait/value/timestamp mappings for repeated observations.</p>
+</div>
+<div class="section level2">
 <h2 id="analysis">Analysis<a class="anchor" aria-label="anchor" href="#analysis"></a>
 </h2>
 <p>Each design has its own analysis: ANOVA with estimable degrees of freedom, adjusted entry means (BLUEs) with standard errors, the mean SED and the 5% LSD, or random entries (BLUPs) and ‘SpATS’ spatial models.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">field</span> <span class="op">&lt;-</span> <span class="va">rc</span><span class="op">$</span><span class="va">design</span></span>
 <span><span class="va">field</span><span class="op">$</span><span class="va">yield</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">field</span><span class="op">)</span>, <span class="fl">60</span>, <span class="fl">3</span><span class="op">)</span>   <span class="co"># your phenotypes here</span></span>
 <span><span class="fu"><a href="reference/plot_trait.html">plot_trait</a></span><span class="op">(</span><span class="va">field</span>, <span class="st">"yield"</span><span class="op">)</span>                 <span class="co"># distribution and field map</span></span>
@@ -174,7 +210,7 @@
 <span><span class="va">fit</span><span class="op">$</span><span class="va">adjusted_means</span>                         <span class="co"># all entries ranked</span></span></code></pre></div>
 <p>For trials of any design across locations, <code><a href="reference/analyze_two_stage.html">analyze_two_stage()</a></code> analyses each location first (spatial, blocks or design model) and then combines them, weighting by precision and with a random genotype-by-location interaction; <code><a href="reference/analyze_single_stage.html">analyze_single_stage()</a></code> fits everything in one model. P-rep designs have their own <code><a href="reference/analyze_augmented_prep_two_stage.html">analyze_augmented_prep_two_stage()</a></code>.</p>
 <p>The results go back to Breedbase, with the phenotypes:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/save_breedbase_phenotypes.html">save_breedbase_phenotypes</a></span><span class="op">(</span><span class="va">sheet</span>, <span class="va">con</span><span class="op">)</span>                  <span class="co"># the field sheet, filled in</span></span>
 <span><span class="va">stage1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/first_stage_values.html">first_stage_values</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">rc</span>, trial_name <span class="op">=</span> <span class="st">"AYT_2026_Ibadan"</span>,</span>
 <span>                             location <span class="op">=</span> <span class="st">"Ibadan"</span>, trait <span class="op">=</span> <span class="st">"fresh root yield"</span><span class="op">)</span></span>
@@ -188,7 +224,7 @@
 <h2 id="environment-stratification-grouping-environments">Environment stratification (grouping environments)<a class="anchor" aria-label="anchor" href="#environment-stratification-grouping-environments"></a>
 </h2>
 <p>Before combining trials from several locations, check two things: are the error variances similar enough to analyse the trials together, and which environments rank the genotypes alike? Both run directly on a phenotype file downloaded from ‘Breedbase’. The package includes an example with four trials:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pheno_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"breedbase_pheno.csv"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span></span>
 <span><span class="va">loc_file</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"breedbase_locations.csv"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span></span>
 <span></span>
@@ -218,7 +254,9 @@
 <li>
 <strong>Website</strong>: <a href="https://solgenomics.github.io/breedtools/" class="uri">https://solgenomics.github.io/breedtools/</a>. The <a href="https://solgenomics.github.io/breedtools/reference/">function reference</a> groups every function by task and shows its arguments with examples you can run.</li>
 <li>
-<strong>Tutorial</strong>: <code><a href="articles/breedtools.html">vignette("breedtools")</a></code> walks through every design and analysis with simulated data, and connecting to Breedbase.</li>
+<strong>Getting started</strong>: <code><a href="articles/getting-started.html">vignette("getting-started", package = "breedtools")</a></code> follows one trial from connection and checks to Field Book files, phenotypes, analysis and saving results.</li>
+<li>
+<strong>Full tutorial</strong>: <code><a href="articles/breedtools.html">vignette("breedtools", package = "breedtools")</a></code> walks through every design and analysis with simulated data, and connecting to Breedbase.</li>
 <li>
 <strong>RStudio script</strong>: the whole workflow in one file, <code>file.edit(system.file("examples", "breedtools_workflow.R", package = "breedtools"))</code>. The complete tour in <code>scripts/validate_designs.R</code> (in the GitHub repository) also reads existing Breedbase trials and adds traits to saved analyses.</li>
 <li>
@@ -260,7 +298,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/design_options.html">design_options</a></span><span class="op">(</span>n_entries <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/augmented_row_column_layouts.html">augmented_row_column_layouts</a></span><span class="op">(</span>rows_in_field <span class="op">=</span> <span class="fl">12</span>, cols_in_field <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/augmented_prep_parameters.html">augmented_prep_parameters</a></span><span class="op">(</span>n_treatments <span class="op">=</span> <span class="fl">20</span>, n_locations <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
@@ -292,7 +330,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/augmented_row_column_design.html">augmented_row_column_design</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"G"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">108</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"C"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>,</span>
 <span>                                  rows_in_field <span class="op">=</span> <span class="fl">12</span>, cols_in_field <span class="op">=</span> <span class="fl">12</span>,</span>
 <span>                                  rows_per_block <span class="op">=</span> <span class="fl">4</span>, cols_per_block <span class="op">=</span> <span class="fl">4</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -336,7 +374,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/augmented_prep_design.html">augmented_prep_design</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"G"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">60</span><span class="op">)</span>, locations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"North"</span>, <span class="st">"South"</span><span class="op">)</span>,</span>
 <span>                              block_size <span class="op">=</span> <span class="fl">6</span>, field_cols <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/plot_augmented_prep_design.html">plot_augmented_prep_design</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span>
@@ -375,7 +413,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/resolvable_row_column_design.html">resolvable_row_column_design</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">42</span><span class="op">)</span>, n_reps <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>                                   rows_per_rep <span class="op">=</span> <span class="fl">6</span>, cols_per_rep <span class="op">=</span> <span class="fl">7</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/resolvable_row_column_efficiency.html">resolvable_row_column_efficiency</a></span><span class="op">(</span><span class="va">rr</span><span class="op">)</span></span>
@@ -432,7 +470,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_trait.html">plot_trait</a></span><span class="op">(</span><span class="va">d</span>, <span class="st">"yield"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/find_outliers.html">find_outliers</a></span><span class="op">(</span><span class="va">d</span>, <span class="st">"yield"</span><span class="op">)</span></span>
 <span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/analyze_two_stage.html">analyze_two_stage</a></span><span class="op">(</span><span class="va">met</span>, <span class="st">"yield"</span>, stage1 <span class="op">=</span> <span class="st">"design"</span><span class="op">)</span>  <span class="co"># met: trials stacked with a location column</span></span>
@@ -473,7 +511,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/check_reset.html">check_reset</a></span><span class="op">(</span><span class="op">)</span>; <span class="fu"><a href="reference/check_design.html">check_design</a></span><span class="op">(</span><span class="va">rc</span><span class="op">)</span>; <span class="fu"><a href="reference/check_summary.html">check_summary</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -535,9 +573,13 @@
 <td><code><a href="reference/phenotype_template.html">phenotype_template()</a></code></td>
 <td>Makes a phenotyping sheet with the Breedbase plot names</td>
 </tr>
+<tr>
+<td><code><a href="reference/trait_template.html">trait_template()</a></code></td>
+<td>Creates a Field Book trait table and optional <code>.trt</code> file for offline collection</td>
+</tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/breedbase_login.html">breedbase_login</a></span><span class="op">(</span><span class="st">"https://your-breedbase.org"</span>, <span class="st">"your_username"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/breedbase_lists.html">breedbase_programs</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="va">rc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_plot_names.html">add_plot_names</a></span><span class="op">(</span><span class="va">rc</span>, <span class="st">"AYT_2026"</span>, location <span class="op">=</span> <span class="st">"Ibadan"</span><span class="op">)</span>       <span class="co"># see rc$design$plot_name</span></span>
@@ -648,7 +690,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pheno_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"breedbase_pheno.csv"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span></span>
 <span><span class="va">loc_file</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"breedbase_locations.csv"</span>, package <span class="op">=</span> <span class="st">"breedtools"</span><span class="op">)</span></span>
 <span><span class="va">vc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_breedbase_variance_check.html">run_breedbase_variance_check</a></span><span class="op">(</span><span class="va">pheno_file</span>, trait_col <span class="op">=</span> <span class="st">"fresh root yield|CO_334:0000013"</span><span class="op">)</span></span>
